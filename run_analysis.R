@@ -17,9 +17,6 @@ eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
 
 ## download archive into local directory
 require(utils)
-require(stringr)
-require(dplyr)
-
 archiveName <- file.path("stormdata.csv.bz2")
 if (!file.exists(archiveName)) {
     archiveUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -28,7 +25,6 @@ if (!file.exists(archiveName)) {
 }
 
 ## load into data frame and convert date column to date
-### REBUILD FROM SCRATCH
 if(is.null(stormdata)) {
     stormdata <- read.csv(archiveName, stringsAsFactors = FALSE)
 }
@@ -36,6 +32,9 @@ if(is.null(stormdata)) {
 ################################################################################
 
 ## PRELIMINARY
+
+require(stringr)
+
 # What data to include
 # histogram of storm activity measurements
 data <- stormdata[, c("EVTYPE", "STATE", "BGN_DATE", "END_DATE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
@@ -48,6 +47,8 @@ data <- transform(data, evtype = toupper(str_trim(evtype)))
 
 # before histogram
 histEvents <- hist(data$year)
+
+require(dplyr)
 
 ## Use data from 1996 onwards as this is when standardised event types were defined:
 ## from http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype

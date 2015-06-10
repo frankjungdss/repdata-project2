@@ -1,3 +1,9 @@
-.Rproj.user
-.Rhistory
+*.bz2
+nws-summary-2011.pdf
+project2.pdf
 .RData
+.Rhistory
+.Rproj.user
+README.html
+README_cache/
+README_figure/
