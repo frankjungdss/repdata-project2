@@ -1,0 +1,29 @@
+---
+title: 'NOAA Severe Storm Events: Casualties and Damages'
+author: "Frank Jung"
+date: "10 June 2015"
+output: html_document
+---
+
+Synopsis
+========
+
+Introduction
+============
+
+Method
+======
+
+Data Processing
+===============
+
+
+Results
+=======
+
+
+Resources
+=========
+
+
+
