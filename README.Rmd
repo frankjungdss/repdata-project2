@@ -1,7 +1,7 @@
 --- 
 title: 'Impact of Severe Storm Events' 
 author: "Frank Jung" 
-date: "10 June 2015" 
+date: "12 June 2015" 
 output: 
   html_document: 
     keep_md: yes
@@ -17,7 +17,7 @@ period from 1950 to 2011. However, we selected only events after 1996 as that
 was when a range of weather event types were first being measured. In brief:
 
 * the greatest number of casualties (as measured by injury or fatality) occurred
-during *tornados*, and
+  during *tornados*, and
 
 * the greatest economic cost occurred as a consequence of *floods*
 
@@ -107,8 +107,8 @@ casualty <- transform(casualty, casualties = factor(casualties))
 
 ### Economic Damages
 
-The property and crop damage exponents are documented in Section 2.7 "Damage", 
-[National Weather Service Storm Data 
+The property and crop damage exponents are documented in Section 2.7 "Damage",
+[National Weather Service Storm Data
 Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
 
 They are: **K** for thousands ($10^3$), **M** for millions ($10^6$), **B** for
@@ -156,8 +156,9 @@ these issues, other than to highlight them and note that should be considered
 when evaluation these [resuls](#results):
 
 * provenance - multiple sources that have not been guarenteed 
-* event types - there are more [event types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than the
-offical list
+* event types - there are more [event
+  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
+  the offical list
 
 There appears to be multiple sources of data in this data set. The provenance 
 can not be guarenteed, nor does there appear to be any reliable way to identify 

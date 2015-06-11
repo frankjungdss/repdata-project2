@@ -1,11 +1,12 @@
 *.bz2
+cache/
+instructions.html
 nws-summary-2011.pdf
 project2.pdf
 .RData
+README_cache/
+README_figure/
+README_files/
+README.html
 .Rhistory
 .Rproj.user
-README.html
-README_cache/
-README_files/
-README_figure/
-instructions.html
