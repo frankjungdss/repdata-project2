@@ -1,12 +1,6 @@
---- 
-title: 'Impact of Severe Storm Events' 
-author: "Frank Jung" 
-date: "10 June 2015" 
-output: 
-  html_document: 
-    keep_md: yes
-    toc: yes
----
+# Impact of Severe Storm Events
+Frank Jung  
+10 June 2015  
 
 ## Synopsis
 
@@ -26,7 +20,8 @@ during *tornados*, and
 Read [Storm Data](#data) to obtain casualty and economic damage measurements.
 Storm data begins in 1950 and ends in November 2011.
 
-```{r setoptions, echo=TRUE, message=F, warning=F}
+
+```r
 ## set our runtime environment and global defaults.
 require(knitr, quietly = TRUE)
 require(utils, quietly = TRUE)
@@ -43,7 +38,8 @@ opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10, fig.height = 7)
 Download and load [data](#data) which is a `bzip2` archive containing a
 storm data `CSV` records.
 
-```{r loadstormdata}
+
+```r
 # download archive into local directory
 archiveName <- file.path("stormdata.csv.bz2")
 if (!file.exists(archiveName)) {
@@ -63,7 +59,8 @@ all fields are relevant for this exploration.
 
 The column names were set to lowercase and cast to appropriate classes.
 
-```{r tidydata}
+
+```r
 # only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
@@ -79,7 +76,8 @@ being recorded. Then in 1996 the [NWS Directive
 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48 
 standardised event types. So this analysis will use data from 1996 to 2011.
 
-```{r subsetdata}
+
+```r
 data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 ```
 
@@ -91,7 +89,8 @@ Types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 Prepare a data frame of total casualties, (composed of fatalties and injuries).
 The report will list weather events in descending order of total casualties.
 
-```{r getcasualties}
+
+```r
 # summarise by event type, and total is used to order results
 casualty <- data %>%
     mutate(total = fatalities + injuries) %>%
@@ -119,7 +118,8 @@ associated numeric value. We will then update the property (`propdmg`) and crop
 (`cropdmg`) damage estimates using these converted exponents.
 
 
-```{r cleandamages}
+
+```r
 # convert damage exponents to associated numerics
 # where strtoi() will convert "" to 0
 data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
@@ -135,7 +135,8 @@ Prepare a data frame of total damages, (composed of crop and property damage
 estimates in USD). The report will list event types in descending order of total
 damages.
 
-```{r getdamages}
+
+```r
 # summarise by event type, and total is used to order results
 damage <- data %>%
     mutate(total = propdmg + cropdmg) %>%
@@ -189,7 +190,8 @@ The total number of casualties (fatalities and injuries) were counted from 1996
 to 2011. Total casualties have been sorted in descending order. The top ten
 events that cause the greatest loss of life or injury are:
 
-```{r showcasualties}
+
+```r
 ## use top 10 event types
 casualty.worst <- arrange(casualty, desc(total))
 
@@ -206,13 +208,16 @@ casualty.worst[1:(2*10),] %>%
     ggtitle("United States: Casualties from Severe Storm Weather (1996-2011)")
 ```
 
+![](README_files/figure-html/showcasualties-1.png) 
+
 ### What events had the greatest economic cost? 
 
 All Crop and property damage estimates were summed from 1996 to 2011. Total 
 costs were then sorted in descending order. The top ten events that incur the 
 greatest economic cost are:
 
-```{r showdamages}
+
+```r
 ## use top 10 event types
 damage.worst <- arrange(damage, desc(total))
 
@@ -228,6 +233,8 @@ damage.worst[1:(2*10),] %>%
     scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
     ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
 ```
+
+![](README_files/figure-html/showdamages-1.png) 
 
 ## Appendices
 
@@ -252,6 +259,38 @@ damage.worst[1:(2*10),] %>%
 This document was produced in RStudio. The session information detailing
 packages used is:
 
-```{r sessioninformation} 
+
+```r
 sessionInfo()
+```
+
+```
+## R version 3.2.0 (2015-04-16)
+## Platform: x86_64-pc-linux-gnu (64-bit)
+## Running under: Linux Mint LMDE
+## 
+## locale:
+##  [1] LC_CTYPE=en_AU.UTF-8       LC_NUMERIC=C              
+##  [3] LC_TIME=en_AU.UTF-8        LC_COLLATE=en_AU.UTF-8    
+##  [5] LC_MONETARY=en_AU.UTF-8    LC_MESSAGES=en_AU.UTF-8   
+##  [7] LC_PAPER=en_AU.UTF-8       LC_NAME=C                 
+##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+## [11] LC_MEASUREMENT=en_AU.UTF-8 LC_IDENTIFICATION=C       
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] scales_0.2.4   ggplot2_1.0.1  reshape2_1.4.1 dplyr_0.4.1   
+## [5] stringr_1.0.0  knitr_1.10.5  
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_0.11.6        magrittr_1.5       MASS_7.3-40       
+##  [4] munsell_0.4.2      colorspace_1.2-6   plyr_1.8.2        
+##  [7] tools_3.2.0        parallel_3.2.0     grid_3.2.0        
+## [10] gtable_0.1.2       DBI_0.3.1          htmltools_0.2.6   
+## [13] yaml_2.1.13        lazyeval_0.1.10    assertthat_0.1    
+## [16] digest_0.6.8       RColorBrewer_1.1-2 formatR_1.2       
+## [19] codetools_0.2-11   evaluate_0.7       rmarkdown_0.6.1   
+## [22] stringi_0.4-1      proto_0.3-10
 ```
