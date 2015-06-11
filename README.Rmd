@@ -9,20 +9,32 @@ output:
 
 ## Synopsis
 
+In this report we summarise the effects that severe storm weather has had to 
+both people and property. The data comes from the United States [National 
+Weather Service](http://www.weather.gov/) and covers the period from 1950 to 
+2011. However, we selected only events after 1996 as that was when a range of
+weather event types were first being measured. In brief:
 
+* the greatest number of casualties (as measured by injury or fatality) occurred
+during *tornados*, and
+
+* the greatest economic cost occurred as a consequence of *floods*
 
 ## Data Processing
 
-From the [Storm Data](#data) we will obtain casualty and economic damage
-measurements. Storm data begins in 1950 and ends in November 2011. 
+Read [Storm Data](#data) to obtain casualty and economic damage measurements.
+Storm data begins in 1950 and ends in November 2011.
 
-```{r setoptions, echo=TRUE}
+```{r setoptions, echo=TRUE, message=F, warning=F}
 ## set our runtime environment and global defaults.
-require(knitr)
-require(dplyr)
-require(stringr)
-require(utils)
-opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10)
+require(knitr, quietly = TRUE)
+require(utils, quietly = TRUE)
+require(stringr, quietly = TRUE)
+require(dplyr, quietly = TRUE)
+require(reshape2, quietly = TRUE)
+require(ggplot2, quietly = TRUE)
+require(scales, quietly = TRUE)
+opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10, fig.height = 7)
 ```
 
 ### Download Storm Data
@@ -31,227 +43,209 @@ Download and load [data](#data) which is a `bzip2` archive containing a
 storm data `CSV` records.
 
 ```{r loadstormdata}
-## download archive into local directory
+# download archive into local directory
 archiveName <- file.path("stormdata.csv.bz2")
 if (!file.exists(archiveName)) {
     archiveUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
     download.file(archiveUrl, destfile = archiveName, method = "curl", mode = "wb")
     print(paste(Sys.time(), "archive downloaded"))
 }
-
-## load into data frame and convert date column to date
-stormdata <- read.csv(archiveName, stringsAsFactors = FALSE)
+if(!exists("stormdata")) {
+    stormdata <- read.csv(archiveName, stringsAsFactors = FALSE)
+}
 ```
 
-### Subset Storm Data
+### Subset Storm Data and Tidy
 
-Subset data for the columns required for analyse of casualties and damages.
+Subset data for the columns required for analyse of casualties and damages. Not
+all fields are relevant for the anaylsis. 
 
-```{r subsetcolumns}
-## only need a subset of fields from storm data for this analysis
+Tidy column names and classes. Convert `BGNDATE` to a date.
+
+```{r tidydata}
+# only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
-```
-
-### Tidy Data
-
-Tidy data column names and classes.
-
-```{r tidycolumns}
+# cleanup column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
-data <- transform(data, evtype = toupper(str_trim(evtype)))
+data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 ```
 
-### Subset Years
+From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail event types were being
+recorded. Then in 1996 the [NWS Directive
+10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48
+standardised event types. So this analysis will use data from 1996 to 2011.
 
-By year, how are events distributed? Do we really have little data before 1996?
-
-```{r fulldatahistogram}
-## show effect this has
-par(mfrow = c(1, 2), mar = c(3, 4, 1, 1), oma = c(2, 1, 1, 0))
-hist(data$year, main = "", xlab = "")
-## limit to events after 1996
-data <- data %>% filter(year >= 1996)
-hist(data$year, main = "", ylab = "", xlab = "")
-title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
-mtext("Year", side = 1, outer = TRUE)
+```{r subsetdata}
+data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 ```
 
-So, use data from 1996 onwards as this is when broader range event types were 
-recored. See
-[http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype](Storm Events
-Database: Event Types)
+More detail can be found at [Storm Events Database: Event
+Types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ### Casualties
 
-Lets look at the casualties which are made up of `fatalties` and `injuries`:
+Prepare a list of total casualties, (composed of `fatalties` and `injuries`). 
+The report will list event tpyes in descending order of total casualties.
 
 ```{r getcasualties}
-casualties <- data %>%
+# summarise by event type, total used to order plot
+casualty <- data %>%
+    mutate(total = fatalities + injuries) %>%
+    filter(total > 0) %>%
+    select(evtype, total, fatalities, injuries) %>%
     group_by(evtype) %>%
-    summarise(casualty = sum(fatalities + injuries)) %>%
-    arrange(desc(casualty))
+    summarise(total = sum(total), fatalities = sum(fatalities), injuries = sum(injuries))
+
+# melt into long format to help with plotting
+casualty <- melt(casualty, id.vars = c("evtype", "total"), variable.name = "casualties")
+casualty <- transform(casualty, casualties = factor(casualties))
 ```
 
 ### Economic Damages
-
-Lets cleanup the columns containing the [damages](#damage-exponents).
-
-```{r cleandamages}
-## what are the damage exponents?
-unique(data$propdmgexp)
-unique(data$cropdmgexp)
-
-## convert damage exponents to associated numerics
-## see section 2.7 Damage, http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf
-data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
-data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
-
-## update damage using translated exponents
-options(scipen = 20)
-data$propdmg <- data$propdmg * 10^data$propdmgexp
-data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
-
-## drop old exponent columns
-data$propdmgexp <- NULL
-data$cropdmgexp <- NULL
-```
-
-Summarise the property damage:
-
-```{r getdamages}
-damages <- data %>%
-    group_by(evtype) %>%
-    summarise(damage = sum(propdmg + cropdmg)) %>%
-    arrange(desc(damage))
-```
-
-### Events
-
-As per NWS Directive 10-1605 there are only 48 valid [event types](#event-types)
-as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather
-Service Storm Data Documentation](#documentation) and also [Event Types
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
-
-```{r loadeventtypes}
-## load valid event types as per section 2.1.1 "Storm Data Event Table" table 1 on page 6.
-## National Weather Service Storm Data Documentation
-## See also http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
-## and NWS Directive 10-1605.
-eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
-eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
-```
-
-How many have we here?
-
-```{r eventtypes}
-length(unique(data$evtype))
-```
-
-Well, that is way more than the 48 expected. As these are not
-verified by NWS we may need to exclude them. For the moment we will continue
-processing them and see if they have a material effect on the results.
-
-How do these event types effect casualties?
-
-```{r showbadcasualties}
-head(casualties[!(casualties$evtype %in% eventtypes$eventtype), ], 20)
-```
-
-How do these event types effect damages?
-
-```{r showbaddamages}
-head(damages[!(damages$evtype %in% eventtypes$eventtype), ], 20)
-```
-
-
-Results
-=======
-
-What events had the most casualties?
-------------------------------------
-
-
-What events had the greatest economic cost? 
--------------------------------------------
-
-
-Appendices
-==========
-
-Data
-----
-
-* [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
-[47Mb] 
-
-Code
-----
-
-* all code and associated documentation is available on GitHub from [here](https://github.com/frankhjung/repdata-project2).
-
-Documentation
--------------
-
-* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-* National Climatic Data Center Storm Events
-[FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
-
-Storm Data Disclaimer
----------------------
-
-There appears to be multiple sources of data in this data set. As the provenance
-can not be guarenteed for these and there appears to be reliable way to identify
-them in the data set provided, we will use only records with a known valid
-[Event Types](#event-types).
-
-_Some information appearing in Storm Data may be provided by or gathered from
-sources outside the National Weather Service (NWS), such as the media, law
-enforcement and/or other government agencies, private companies, individuals,
-etc. An effort is made to use the best available information, but because of
-time and resource constraints, information from these sources may be unverified
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of
-the information._
-
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-Event Types
------------
-
-Tornado, Thunderstorm Wind and Hail were the only [event
-types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) reported
-from 1950 to 1995. From 1996, 48 event types were defined by [NWS Directive
-10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf). These are
-listed in Table 1 of Section 2.1.1 "Storm Data Event Table", [National Weather
-Service Storm Data
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-They are:
-
-```{r valideventtypes}
-print(eventtypes)
-```
-
-For convience these have been tabulated into the CSV file, eventtypes.csv 
-available here, .
-
-Damage Exponents
-----------------
 
 The property and crop damage exponents are documented in Section 2.7 "Damage", 
 [National Weather Service Storm Data 
 Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
 
 They are: **K** for thousands ($10^3$), **M** for millions ($10^6$), **B** for
-billions ($10^9$)
+billions ($10^9$).
 
-Session Information
--------------------
+The following will mapping `propdmgexp` and `cropdmgexp` from character to
+associated numeric value. Then update the property (`propdmg`) and crop
+(`cropdmg`) damage estimates.
+
+
+```{r cleandamages}
+# convert damage exponents to associated numerics
+# where strtoi() will convert "" to 0
+data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
+data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
+
+# update damage using translated exponents
+options(scipen = 20)
+data$propdmg <- data$propdmg * 10^data$propdmgexp
+data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
+
+# drop old exponent columns
+data$propdmgexp <- NULL
+data$cropdmgexp <- NULL
+```
+
+Prepare a list of total damages, (composed of crop and property damage estimates
+in USD). The report will list event types in descending order of total damages.
+
+```{r getdamages}
+# summarise by event type, total used to order plot
+damage <- data %>%
+    mutate(total = propdmg + cropdmg) %>%
+    filter(total > 0) %>%
+    select(evtype, total, propdmg, cropdmg) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), property = sum(propdmg), crop = sum(cropdmg))
+
+# melt into long format to help with plotting
+damage <- melt(damage, id.vars = c("evtype", "total"), variable.name = "damages")
+damage <- transform(damage, damages = factor(damages))
+```
+
+### Events
+
+There are several issues with this Storm Data. This analysis will not address 
+these issues, other than to highlight them and note that should be considered
+when evaluation these [resuls](#results):
+
+* provenance - multiple sources that have not been guarenteed 
+* event types - there are more [event types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than the
+offical list
+
+There appears to be multiple sources of data in this data set. The provenance 
+can not be guarenteed, nor does there appear to be any reliable way to identify 
+them in the data set provided:
+
+_Some information appearing in Storm Data may be provided by or gathered from 
+sources outside the National Weather Service (NWS), such as the media, law 
+enforcement and/or other government agencies, private companies, individuals, 
+etc. An effort is made to use the best available information, but because of 
+time and resource constraints, information from these sources may be unverified 
+by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
+the information._
+
+Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
+Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+As per NWS Directive 10-1605 there are only 48 valid event types
+as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
+Service Storm Data Documentation](#documentation) and also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+
+
+## Results
+
+
+### What events had the most casualties?
+
+The top ten events that cause the greatest loss of life or injury are:
+
+```{r showcasualties}
+## use top 10 event types
+casualty.worst <- arrange(casualty, desc(total))
+
+## plot casualties in descending order (first 2*10 rows since long format)
+casualty.worst[1:(2*10),] %>%
+    ggplot(aes(x = reorder(evtype, -total), y = value/1000, fill = casualties)) +
+    geom_bar(stat = "identity", position = "stack") +
+    theme_light(base_family = "Avenir", base_size = 11) +
+    theme(legend.justification = c(1, 1), legend.position = c(1, 1)) +
+    theme(axis.text.x = element_text(angle = 90)) +
+    scale_fill_brewer(name = "Casualty", palette = "Set2") +
+    scale_x_discrete(name = "Weather Event") +
+    scale_y_discrete(name = "Casualties (thousands", breaks = pretty_breaks(n = 10)) +
+    ggtitle("United States: Casualties from Severe Storm Weather (1996-2011)")
+```
+
+### What events had the greatest economic cost? 
+
+The top ten events that incur the greatest economic cost are:
+
+```{r showdamages}
+## use top 10 event types
+damage.worst <- arrange(damage, desc(total))
+
+## plot damages in descending order (first 2*10 rows since long format)
+damage.worst[1:(2*10),] %>%
+    ggplot(aes(x = reorder(evtype, -total), y = value/10^9, fill = damages)) +
+    geom_bar(stat = "identity", position = "stack") +
+    theme_light(base_family = "Avenir", base_size = 11) +
+    theme(legend.justification = c(1, 1), legend.position = c(1, 1)) +
+    theme(axis.text.x = element_text(angle = 90)) +
+    scale_fill_brewer(name = "Damage", palette = "Set2") +
+    scale_x_discrete(name = "Weather Event") +
+    scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
+    ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
+```
+
+## Appendices
+
+### Data
+
+* [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+[47Mb] 
+
+### Code
+
+* all code and associated documentation is available on GitHub from [here](https://github.com/frankhjung/repdata-project2).
+
+### Documentation
+
+* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+* National Climatic Data Center Storm Events
+[FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+### Session Information
 
 This document was produced in RStudio. The session information detailing
 packages used is:

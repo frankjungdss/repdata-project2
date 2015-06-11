@@ -1,11 +1,22 @@
 #!/usr/bin/R --verbose --quiet
 
 #
+# INITIAL
+#
+require(utils, quietly = TRUE)
+require(stringr, quietly = TRUE)
+require(dplyr, quietly = TRUE)
+require(reshape2, quietly = TRUE)
+require(ggplot2, quietly = TRUE)
+require(scales, quietly = TRUE)
+
+################################################################################
+
+#
 # LOAD RAW DATA
 #
 
 ## download archive into local directory
-require(utils)
 archiveName <- file.path("stormdata.csv.bz2")
 if (!file.exists(archiveName)) {
     archiveUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -14,72 +25,134 @@ if (!file.exists(archiveName)) {
 }
 
 ## load into data frame and convert date column to date
-if(is.null(stormdata)) {
+if(!exists("stormdata")) {
     stormdata <- read.csv(archiveName, stringsAsFactors = FALSE)
 }
 
 ################################################################################
 
-## PRELIMINARY
-
-require(dplyr)
-require(stringr)
+#
+# TIDY COLUMNS
+#
 
 ## only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
-
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
-data <- transform(data, evtype = toupper(str_trim(evtype)))
 
-## Use data from 1996 onwards as this is when broader range event types were
-## recored. See http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
-## show effect this has
-par(mfrow = c(1, 2), mar = c(2, 2, 1, 1), oma = c(0, 1, 2, 0))
-hist(data$year, main = "", xlab = "", cex = 0.75)
-# axis(1, at = unique(data$year), cex = 0.75)
-data <- data %>% filter(year >= 1996)
-hist(data$year, main = "", ylab = "", xlab = "")
-# axis(1, at = unique(data$year), cex = 0.75)
-title(main = "Histograms of event frequencies by year", outer = TRUE)
+#
+# USE DATA AFTER 1996
+#
+
+## prior 1996 contains only Tornado, Thunderstorm Wind and Hail events
+## NWS Directive 10-1605 introduced 48 standardised event types
+# data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
+data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
+
+fixevtype <- NULL
+# correct signiticant event types
+if (exists("fixevtype") && fixevtype == TRUE) {
+    data <- transform(data, evtype = toupper(evtype))
+    data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
+    data <- transform(data, evtype = gsub(" \\(G\\d+\\)", "", evtype), perl = TRUE)
+    data <- transform(data, evtype = gsub("THUNDERSTORM WIND/HAIL", "THUNDERSTORM WIND", evtype))
+    data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE/TYPHOON", evtype))
+    data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
+    #data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
+    #data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
+    #data <- transform(data, evtype = gsub("WINTER WEATHER.MIX", "WINTER WEATHER", evtype))
+    #data <- transform(data, evtype = gsub("COASTAL FLOODING.*", "COASTAL FLOOD", evtype))
+    #data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
+    #data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
+}
+
+data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 
 #
 # CASUALTIES
 #
 
-## (temp - may not need) what is total casualties
-data <- data %>% mutate(casualty = fatalities + injuries)
+# summarise by event type, total used to order plot
+casualty <- data %>%
+    mutate(total = fatalities + injuries) %>%
+    filter(total > 0) %>%
+    select(evtype, total, fatalities, injuries) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), fatalities = sum(fatalities), injuries = sum(injuries))
+
+# melt into long format to help with plotting
+casualty <- melt(casualty, id.vars = c("evtype", "total"), variable.name = "casualties")
+casualty <- transform(casualty, casualties = factor(casualties))
+
+# use top 10 event types
+casualty.worst <- arrange(casualty, desc(total))
+
+# plot casualties in descending order (first 2*10 rows since long format)
+casualty.worst[1:(2*10),] %>%
+    ggplot(aes(x = reorder(evtype, -total), y = value, fill = casualties)) +
+    geom_bar(stat = "identity", position = "stack") +
+    theme_light(base_family = "Avenir", base_size = 11) +
+    scale_fill_brewer(name = "Emission Source Type", palette = "Set2") +
+    scale_x_discrete(name = "Event Type") +
+    scale_y_discrete(name = "Casualties", breaks = pretty_breaks(n = 10)) +
+    ggtitle("United States: Casualties from Severe Storm Weather")
+
 
 #
 # DAMAGE
 #
 
-## what are the damage exponents?
-unique(data$propdmgexp)
-unique(data$cropdmgexp)
-
-## convert damage exponents to associated numerics
-## see section 2.7 Damage, http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf
+# convert damage exponents to associated numerics
+# where strtoi() will convert "" to 0
 data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
 data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 
-## update damage using exponents
+# update damage using translated exponents
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
 
-## drop old exponents
+# drop old exponent columns
 data$propdmgexp <- NULL
 data$cropdmgexp <- NULL
 
-## (temp - may not need) what is total damage
-data <- data %>% mutate(damage = propdmg + cropdmg)
+# order by descending damages
+data <- arrange(desc(propdmg + cropdmg))
 
+# summarise by event type, total used to order plot
+damage <- data %>%
+    mutate(total = propdmg + cropdmg) %>%
+    filter(total > 0) %>%
+    select(evtype, total, propdmg, cropdmg) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), property = sum(propdmg), crop = sum(cropdmg))
 
+# melt into long format to help with plotting
+damage <- melt(damage, id.vars = c("evtype", "total"), variable.name = "damages")
+damage <- transform(damage, damages = factor(damages))
 
+## use top 10 event types
+damage.worst <- arrange(damage, desc(total))
+
+## plot damages in descending order (first 2*10 rows since long format)
+damage.worst[1:(2*10),] %>%
+    ggplot(aes(x = reorder(evtype, -total), y = value/10^9, fill = damages)) +
+    geom_bar(stat = "identity", position = "stack") +
+    theme_light(base_family = "Avenir", base_size = 11) +
+    theme(legend.justification = c(1, 1), legend.position = c(1, 1)) +
+    theme(axis.text.x = element_text(angle = 90)) +
+    scale_fill_brewer(name = "Damage", palette = "Set2") +
+    scale_x_discrete(name = "Weather Event") +
+    scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
+    ggtitle("United States: Economic Damages from Severe Storm Weather")
+################################################################################
+
+#
+# SAVE
+#
+save.image(compress = "bzip2")
 
 ################################################################################
 
@@ -114,87 +187,24 @@ dropped <- data %>% filter(!(evtype %in% eventtypes$eventtype))
 dropped <- dropped[!(grepl("summary", dropped$evtype, ignore.case = T)), ]
 histEvents <- hist(dropped$year)
 
-## what evtypes can be corrected?
-#fixtypes <- data[!(toupper(data$evtype) %in% eventtypes$eventtype), "evtype"]
-#unique(fixtypes)
-#
-# drop summaries
-#data <- data[!(grepl("summary", data$evtype, ignore.case = T)), ]
-#
-# correct some obvious event types
-#data <- transform(data, evtype = gsub("TSTM WIND/HAIL", "HAIL", evtype))
-#data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
-
-# Casualties per year and average per year
-# is there a change in which is the top evtype each year?
-
-## summary by evtype per year
-health <- data %>%
-    group_by(year, evtype) %>%
-    summarise(casualty = sum(fatalities + injuries)) %>%
-    arrange(year, desc(casualty))
-
-## this has all the data I want to plot for casualities
-## try with full set of event types and with just offical list
-for (y in unique(health$year)) {
-    x <- subset(health, year == y, c(year, evtype, casualty))
-    print(x[1:5,])
-}
-
-## average evtype per year
-health <- health %>%
-    group_by(evtype) %>%
-    summarise(annual = mean(casualty))
-
-health[order(health$annual, decreasing = T)[1:5],]
-#              evtype    annual
-# 1           Tornado 1386.1250
-# 2    Excessive Heat  511.7500
-# 3             Flood  448.2500
-# 4         Lightning  299.5000
-# 5 Thunderstorm Wind  218.5714
-
-#
-
 
 ################################################################################
 
-## get valid data
-data <- stormdata[stormdata$END_DATE != "", c("EVTYPE", "STATE", "BGN_DATE", "END_DATE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+#
+# HISTOGRAM OF EVENT TYPES
+#
 
-## filter on valid event types as above
-data <- data %>% filter(toupper(str_trim(EVTYPE)) %in% eventtypes$eventtype)
-
-## tidy names
-names(data) <- tolower(names(data))
-names(data) <- gsub("_", "", names(data))
-
-## pretty printing of event types
-data <- transform(data, evtype = str_to_title(evtype))
-
-## names(stormdata)[names(stormdata) == "state.1"] <- "statecode"
-## convert begin and end dates (dates only as time not required for analysis)
-data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, enddate = as.Date(enddate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-
-## convert damage exponents to associated numerics
-data$propdmgexp <- strtoi(chartr("KMB+-", "36900", data$propdmgexp))
-data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
-
-## update damage using exponents
-options(scipen = 20)
-data$propdmg <- data$propdmg * 10^data$propdmgexp
-data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
-
-## can now drop exponents
-data$propdmgexp <- NULL
-data$cropdmgexp <- NULL
-
-
-## factors
-# stormdata <- transform(stormdata, evtype = factor(evtype))
-# stormdata <- transform(stormdata, statecode = factor(statecode))
-# stormdata <- transform(stormdata, timezone = toupper(timezone))
+## Use data from 1996 onwards as this is when broader range event types were
+## recored. See http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+## show effect this has
+## show effect this has
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 1), oma = c(2, 1, 1, 0))
+hist(data$year, main = "", xlab = "")
+## limit to events after 1996
+data <- data %>% filter(year >= 1996)
+hist(data$year, main = "", ylab = "", xlab = "")
+title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
+mtext("Year", side = 1, outer = TRUE)
 
 #
 # SAVE
