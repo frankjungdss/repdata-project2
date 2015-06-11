@@ -9,11 +9,11 @@ output:
 
 ## Synopsis
 
-In this report we summarise the effects that severe storm weather has had to 
-both people and property. The data comes from the United States [National 
-Weather Service](http://www.weather.gov/) and covers the period from 1950 to 
-2011. However, we selected only events after 1996 as that was when a range of
-weather event types were first being measured. In brief:
+In this report we explore the NOAA Storm Database for the effects that severe
+storm weather has had to both people and property. The data comes from the
+United States [National Weather Service](http://www.weather.gov/) and covers the
+period from 1950 to 2011. However, we selected only events after 1996 as that
+was when a range of weather event types were first being measured. In brief:
 
 * the greatest number of casualties (as measured by injury or fatality) occurred
 during *tornados*, and
@@ -57,25 +57,25 @@ if(!exists("stormdata")) {
 
 ### Subset Storm Data and Tidy
 
-Subset data for the columns required for analyse of casualties and damages. Not
-all fields are relevant for the anaylsis. 
+Subset data for the columns required for analysis of casualties and damages. Not
+all fields are relevant for this exploration.
 
-Tidy column names and classes. Convert `BGNDATE` to a date.
+The column names were set to lowercase and cast to appropriate classes.
 
 ```{r tidydata}
 # only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
-# cleanup column names
+# cleanup and lowercase column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
 data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 ```
 
-From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail event types were being
-recorded. Then in 1996 the [NWS Directive
-10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48
+From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
+being recorded. Then in 1996 the [NWS Directive 
+10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48 
 standardised event types. So this analysis will use data from 1996 to 2011.
 
 ```{r subsetdata}
@@ -87,11 +87,11 @@ Types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ### Casualties
 
-Prepare a list of total casualties, (composed of `fatalties` and `injuries`). 
-The report will list event tpyes in descending order of total casualties.
+Prepare a data frame of total casualties, (composed of fatalties and injuries).
+The report will list weather events in descending order of total casualties.
 
 ```{r getcasualties}
-# summarise by event type, total used to order plot
+# summarise by event type, and total is used to order results
 casualty <- data %>%
     mutate(total = fatalities + injuries) %>%
     filter(total > 0) %>%
@@ -113,9 +113,9 @@ Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd010
 They are: **K** for thousands ($10^3$), **M** for millions ($10^6$), **B** for
 billions ($10^9$).
 
-The following will mapping `propdmgexp` and `cropdmgexp` from character to
-associated numeric value. Then update the property (`propdmg`) and crop
-(`cropdmg`) damage estimates.
+The following will map `propdmgexp` and `cropdmgexp` from a character to the 
+associated numeric value. We will then update the property (`propdmg`) and crop 
+(`cropdmg`) damage estimates using these converted exponents.
 
 
 ```{r cleandamages}
@@ -128,17 +128,14 @@ data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
-
-# drop old exponent columns
-data$propdmgexp <- NULL
-data$cropdmgexp <- NULL
 ```
 
-Prepare a list of total damages, (composed of crop and property damage estimates
-in USD). The report will list event types in descending order of total damages.
+Prepare a data frame of total damages, (composed of crop and property damage
+estimates in USD). The report will list event types in descending order of total
+damages.
 
 ```{r getdamages}
-# summarise by event type, total used to order plot
+# summarise by event type, and total is used to order results
 damage <- data %>%
     mutate(total = propdmg + cropdmg) %>%
     filter(total > 0) %>%
@@ -187,7 +184,9 @@ Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ### What events had the most casualties?
 
-The top ten events that cause the greatest loss of life or injury are:
+The total number of casualties (fatalities and injuries) were counted from 1996
+to 2011. Total casualties have been sorted in descending order. The top ten
+events that cause the greatest loss of life or injury are:
 
 ```{r showcasualties}
 ## use top 10 event types
@@ -208,7 +207,9 @@ casualty.worst[1:(2*10),] %>%
 
 ### What events had the greatest economic cost? 
 
-The top ten events that incur the greatest economic cost are:
+All Crop and property damage estimates were summed from 1996 to 2011. Total 
+costs were then sorted in descending order. The top ten events that incur the 
+greatest economic cost are:
 
 ```{r showdamages}
 ## use top 10 event types
