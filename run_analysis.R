@@ -1,17 +1,6 @@
 #!/usr/bin/R --verbose --quiet
 
 #
-# SUBSET TO VALID EVENT TYPES
-#
-
-## load valid event types as per section 2.1.1 "Storm Data Event Table" table 1 on page 6.
-## National Weather Service Storm Data Documentation
-## See also http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
-## and NWS Directive 10-1605.
-eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
-eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
-
-#
 # LOAD RAW DATA
 #
 
@@ -33,30 +22,36 @@ if(is.null(stormdata)) {
 
 ## PRELIMINARY
 
+require(dplyr)
 require(stringr)
 
-# What data to include
-# histogram of storm activity measurements
-data <- stormdata[, c("EVTYPE", "STATE", "BGN_DATE", "END_DATE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+## only need a subset of fields from storm data for this analysis
+data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
+                      "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, enddate = as.Date(enddate, format= "%m/%d/%Y 0:00:00", tz = "C"))
 data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
 data <- transform(data, evtype = toupper(str_trim(evtype)))
 
-# before histogram
-histEvents <- hist(data$year)
-
-require(dplyr)
-
-## Use data from 1996 onwards as this is when standardised event types were defined:
-## from http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
-## we can argue that really should look at dates after 1996 ...
+## Use data from 1996 onwards as this is when broader range event types were
+## recored. See http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+## show effect this has
+par(mfrow = c(1, 2), mar = c(2, 2, 1, 1), oma = c(0, 1, 2, 0))
+hist(data$year, main = "", xlab = "", cex = 0.75)
+# axis(1, at = unique(data$year), cex = 0.75)
 data <- data %>% filter(year >= 1996)
+hist(data$year, main = "", ylab = "", xlab = "")
+# axis(1, at = unique(data$year), cex = 0.75)
+title(main = "Histograms of event frequencies by year", outer = TRUE)
 
-# after histogram
-histEvents <- hist(data$year)
+#
+# CASUALTIES
+#
+
+## (temp - may not need) what is total casualties
+data <- data %>% mutate(casualty = fatalities + injuries)
 
 #
 # DAMAGE
@@ -80,12 +75,25 @@ data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
 data$propdmgexp <- NULL
 data$cropdmgexp <- NULL
 
-## (temp) what is total damage
+## (temp - may not need) what is total damage
 data <- data %>% mutate(damage = propdmg + cropdmg)
+
+
+
+
+################################################################################
 
 #
 # EVENT TYPES
 #
+
+## load valid event types as per section 2.1.1 "Storm Data Event Table" table 1 on page 6.
+## National Weather Service Storm Data Documentation
+## See also http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+## and NWS Directive 10-1605.
+eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
+eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
+
 ## See section 2.1 Permitted Storm Data Events.
 ## load valid event types as per section 2.1.1 "Storm Data Event Table" table 1 on page 6.
 ## National Weather Service Storm Data Documentation
@@ -106,7 +114,6 @@ dropped <- data %>% filter(!(evtype %in% eventtypes$eventtype))
 dropped <- dropped[!(grepl("summary", dropped$evtype, ignore.case = T)), ]
 histEvents <- hist(dropped$year)
 
-
 ## what evtypes can be corrected?
 #fixtypes <- data[!(toupper(data$evtype) %in% eventtypes$eventtype), "evtype"]
 #unique(fixtypes)
@@ -118,9 +125,6 @@ histEvents <- hist(dropped$year)
 #data <- transform(data, evtype = gsub("TSTM WIND/HAIL", "HAIL", evtype))
 #data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
 
-
-unique(data$year)
-
 # Casualties per year and average per year
 # is there a change in which is the top evtype each year?
 
@@ -130,8 +134,8 @@ health <- data %>%
     summarise(casualty = sum(fatalities + injuries)) %>%
     arrange(year, desc(casualty))
 
-# this has all the data I want to plot for casualities
-# try with full set of event types and with just offical list
+## this has all the data I want to plot for casualities
+## try with full set of event types and with just offical list
 for (y in unique(health$year)) {
     x <- subset(health, year == y, c(year, evtype, casualty))
     print(x[1:5,])

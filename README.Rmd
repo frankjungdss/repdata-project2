@@ -1,33 +1,37 @@
 --- 
-title: 'Impact of Severe Storm Events: Casualties and Damages' 
+title: 'Impact of Severe Storm Events' 
 author: "Frank Jung" 
 date: "10 June 2015" 
-output: html_document
+output: 
+  html_document: 
+    toc: yes
 ---
 
-Synopsis
-========
+## Synopsis
 
 
-Data Processing
-===============
 
-Set our runtime environment and global defaults.
+## Data Processing
+
+From the [Storm Data](#data) we will obtain casualty and economic damage
+measurements. Storm data begins in 1950 and ends in November 2011. 
 
 ```{r setoptions, echo=TRUE}
+## set our runtime environment and global defaults.
 require(knitr)
+require(dplyr)
+require(stringr)
+require(utils)
 opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10)
 ```
 
-From the [Storm Data](#data) we will obtain casualty and economic damage
-estimates. The data begins in 1950 and ends in November 2011. 
+### Download Storm Data
 
-Download and load [data](#data). This is a `bzip2` archive containing a storm 
-data `CSV` records.
+Download and load [data](#data) which is a `bzip2` archive containing a
+storm data `CSV` records.
 
 ```{r loadstormdata}
 ## download archive into local directory
-require(utils)
 archiveName <- file.path("stormdata.csv.bz2")
 if (!file.exists(archiveName)) {
     archiveUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -39,44 +43,47 @@ if (!file.exists(archiveName)) {
 stormdata <- read.csv(archiveName, stringsAsFactors = FALSE)
 ```
 
-Subset data for just the columns we want to analyse for casualty and damage.
+### Subset Storm Data
+
+Subset data for the columns required for analyse of casualties and damages.
 
 ```{r subsetcolumns}
-## require only subset of data columns
-data <- stormdata[, c("EVTYPE", "STATE", "BGN_DATE", "END_DATE", "FATALITIES",
-                      "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+## only need a subset of fields from storm data for this analysis
+data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
+                      "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
 ```
+
+### Tidy Data
 
 Tidy data column names and classes.
 
 ```{r tidycolumns}
-require(stringr)
-
-## tidy names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
-## tidy column classes
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, enddate = as.Date(enddate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-data <- transform(data, evtype = str_to_title(str_trim(evtype)))
+data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
+data <- transform(data, evtype = toupper(str_trim(evtype)))
 ```
+
+### Subset Years
 
 By year, how are events distributed? Do we really have little data before 1996?
 
 ```{r fulldatahistogram}
-require(stringr)
-data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
-table(data$year)
-```
-
-Looks like we can restrict analysis to after 1996. This was when standard [event
-types](#event-types) were introduced.
-
-```{r subsetfrom1996}
-require(dplyr)
+## show effect this has
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 1), oma = c(2, 1, 1, 0))
+hist(data$year, main = "", xlab = "")
+## limit to events after 1996
 data <- data %>% filter(year >= 1996)
-data$year <- NULL
+hist(data$year, main = "", ylab = "", xlab = "")
+title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
+mtext("Year", side = 1, outer = TRUE)
 ```
+
+So, use data from 1996 onwards as this is when broader range event types were 
+recored. See
+[http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype](Storm Events
+Database: Event Types)
 
 ### Casualties
 
@@ -87,12 +94,6 @@ casualties <- data %>%
     group_by(evtype) %>%
     summarise(casualty = sum(fatalities + injuries)) %>%
     arrange(desc(casualty))
-```
-
-How are they distributed?
-
-```{r showcasualties}
-table(casualties$casualty)
 ```
 
 ### Economic Damages
@@ -109,17 +110,17 @@ unique(data$cropdmgexp)
 data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
 data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 
-## update damage using exponents
+## update damage using translated exponents
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
 
-## drop old exponents
+## drop old exponent columns
 data$propdmgexp <- NULL
 data$cropdmgexp <- NULL
 ```
 
-Now lets summarise the property damage.
+Summarise the property damage:
 
 ```{r getdamages}
 damages <- data %>%
@@ -128,18 +129,21 @@ damages <- data %>%
     arrange(desc(damage))
 ```
 
-How are the economic damages distributed?
-
-```{r showdamages}
-cat(damages$damage)
-```
-
 ### Events
 
 As per NWS Directive 10-1605 there are only 48 valid [event types](#event-types)
 as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather
 Service Storm Data Documentation](#documentation) and also [Event Types
 Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+
+```{r loadeventtypes}
+## load valid event types as per section 2.1.1 "Storm Data Event Table" table 1 on page 6.
+## National Weather Service Storm Data Documentation
+## See also http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+## and NWS Directive 10-1605.
+eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
+eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
+```
 
 How many have we here?
 
@@ -154,13 +158,13 @@ processing them and see if they have a material effect on the results.
 How do these event types effect casualties?
 
 ```{r showbadcasualties}
-table(casualties[!(casualties$evtype %in% eventtypes$eventtype), "casualty"])
+head(casualties[!(casualties$evtype %in% eventtypes$eventtype), ], 20)
 ```
 
 How do these event types effect damages?
 
 ```{r showbaddamages}
-table(damages[!(damages$evtype %in% eventtypes$eventtype), "damage"])
+head(damages[!(damages$evtype %in% eventtypes$eventtype), ], 20)
 ```
 
 
