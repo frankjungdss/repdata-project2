@@ -26,7 +26,7 @@ greatest economic cost occurred as a consequence of
 Read [Storm Data](#data) to obtain casualty and economic damage measurements.
 Storm data begins in 1950 and ends in November 2011.
 
-```{r setoptions, echo=TRUE, message=F, warning=F}
+```{r setoptions, echo=TRUE, message=FALSE, warning=FALSE}
 # set our runtime environment and global defaults.
 require(knitr, quietly = TRUE)
 require(utils, quietly = TRUE)
@@ -35,7 +35,7 @@ require(dplyr, quietly = TRUE)
 require(reshape2, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
-opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10, fig.height = 7)
+opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", fig.width = 10, fig.height = 7, fig.path = "figure/")
 ```
 
 ### Download Storm Data
