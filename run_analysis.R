@@ -31,8 +31,11 @@ data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
 # cleanup and lowercase column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
+
+# as date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
 
+# from 1996
 data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 
 # title-case event types for pretty display
@@ -110,13 +113,16 @@ damage.worst[1:(2*10),] %>%
 if (exists("fixevtype")) {
     data <- transform(data, evtype = toupper(evtype))
     data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
+    data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
     data <- transform(data, evtype = gsub(" \\(G\\d+\\)", "", evtype), perl = TRUE)
-    data <- transform(data, evtype = gsub("THUNDERSTORM WIND/HAIL", "THUNDERSTORM WIND", evtype))
     data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE/TYPHOON", evtype))
-    data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
+    data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE/TYPHOON", evtype))
+    data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
+    data <- transform(data, evtype = gsub("COASTAL FLOODING.*", "COASTAL FLOOD", evtype))
+
     data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
     data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
-    data <- transform(data, evtype = gsub("WINTER WEATHER.MIX", "WINTER WEATHER", evtype))
-    data <- transform(data, evtype = gsub("COASTAL FLOODING.*", "COASTAL FLOOD", evtype))
+    data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
     data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
+    data <- transform(data, evtype = gsub("WINTER WEATHER.MIX", "WINTER WEATHER", evtype))
 }

@@ -17,8 +17,9 @@ greatest economic cost occurred as a consequence of
 
 ## Data Processing
 
-Read [Storm Data](#data) to obtain casualty and economic damage measurements.
-Storm data begins in 1950 and ends in November 2011.
+The following sections will read and process [Storm Data](#data) to obtain
+casualty and economic damage measurements. Note: Storm Data begins in 1950 and
+ends in November 2011.
 
 
 ```r
