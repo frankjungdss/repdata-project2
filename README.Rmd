@@ -56,35 +56,63 @@ if(!exists("stormdata")) {
 }
 ```
 
-### Subset Storm Data and Tidy
+### Subset Storm Data
 
 Subset data for the columns required for analysis of casualties and damages. Not
 all fields contained in the dataset are relevant for this exploration.
 
 The column names were set to lowercase and cast to appropriate classes.
 
-```{r tidydata}
+```{r subsetdata}
 # only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
 # cleanup and lowercase column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
+# convert string to date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
+# use title-case for pretty reports
 data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 ```
+
+### Events
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48 
 standardised event types. So this analysis will use data from 1996 to 2011.
 
-```{r subsetdata}
+```{r from1996}
 data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 ```
 
-More detail can be found at [Storm Events Database: Event
-Types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+There are several issues with this Storm Data. This analysis will not address 
+these issues, other than to highlight them and note that they should be
+considered when evaluating these [results](#results):
+
+* provenance - multiple sources that have not been guarenteed by the NWS
+* event types - there are more [event
+  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
+  the offical list
+
+The documentation states:
+
+_Some information appearing in Storm Data may be provided by or gathered from 
+sources outside the National Weather Service (NWS), such as the media, law 
+enforcement and/or other government agencies, private companies, individuals, 
+etc. An effort is made to use the best available information, but because of 
+time and resource constraints, information from these sources may be unverified 
+by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
+the information._
+
+Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
+Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+As per NWS Directive 10-1605 there are only 48 valid event types
+as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
+Service Storm Data Documentation](#documentation). See also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ### Casualties
 
@@ -124,7 +152,7 @@ associated numeric value. We will then update the property (`propdmg`) and crop
 data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
 data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 
-# update damage using translated exponents
+# update damage using translated exponents, where 10^0 = 1 (i.e. no change)
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
@@ -147,35 +175,6 @@ damage <- data %>%
 damage <- melt(damage, id.vars = c("evtype", "total"), variable.name = "damages")
 damage <- transform(damage, damages = factor(damages))
 ```
-
-### Events
-
-There are several issues with this Storm Data. This analysis will not address 
-these issues, other than to highlight them and note that they should be
-considered when evaluating these [resuls](#results):
-
-* provenance - multiple sources that have not been guarenteed by the NWS
-* event types - there are more [event
-  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
-  the offical list
-
-The documentation states:
-
-_Some information appearing in Storm Data may be provided by or gathered from 
-sources outside the National Weather Service (NWS), such as the media, law 
-enforcement and/or other government agencies, private companies, individuals, 
-etc. An effort is made to use the best available information, but because of 
-time and resource constraints, information from these sources may be unverified 
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
-the information._
-
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-As per NWS Directive 10-1605 there are only 48 valid event types
-as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
-Service Storm Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ## Results
 

@@ -1,12 +1,6 @@
---- 
-title: 'Impact of Severe Storm Events' 
-author: "Frank Jung" 
-date: "12 June 2015" 
-output: 
-  html_document: 
-    keep_md: yes
-    toc: yes
----
+# Impact of Severe Storm Events
+Frank Jung  
+12 June 2015  
 
 ## Synopsis
 
@@ -58,7 +52,7 @@ if(!exists("stormdata")) {
 }
 ```
 
-### Subset Storm Data and Tidy
+### Subset Storm Data
 
 Subset data for the columns required for analysis of casualties and damages. Not
 all fields contained in the dataset are relevant for this exploration.
@@ -73,9 +67,13 @@ data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
 # cleanup and lowercase column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
+# convert string to date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
+# use title-case for pretty reports
 data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 ```
+
+### Events
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
@@ -87,8 +85,32 @@ standardised event types. So this analysis will use data from 1996 to 2011.
 data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 ```
 
-More detail can be found at [Storm Events Database: Event
-Types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+There are several issues with this Storm Data. This analysis will not address 
+these issues, other than to highlight them and note that they should be
+considered when evaluating these [results](#results):
+
+* provenance - multiple sources that have not been guarenteed by the NWS
+* event types - there are more [event
+  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
+  the offical list
+
+The documentation states:
+
+_Some information appearing in Storm Data may be provided by or gathered from 
+sources outside the National Weather Service (NWS), such as the media, law 
+enforcement and/or other government agencies, private companies, individuals, 
+etc. An effort is made to use the best available information, but because of 
+time and resource constraints, information from these sources may be unverified 
+by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
+the information._
+
+Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
+Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+As per NWS Directive 10-1605 there are only 48 valid event types
+as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
+Service Storm Data Documentation](#documentation). See also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ### Casualties
 
@@ -130,7 +152,7 @@ associated numeric value. We will then update the property (`propdmg`) and crop
 data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
 data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 
-# update damage using translated exponents
+# update damage using translated exponents, where 10^0 = 1 (i.e. no change)
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
@@ -154,35 +176,6 @@ damage <- data %>%
 damage <- melt(damage, id.vars = c("evtype", "total"), variable.name = "damages")
 damage <- transform(damage, damages = factor(damages))
 ```
-
-### Events
-
-There are several issues with this Storm Data. This analysis will not address 
-these issues, other than to highlight them and note that they should be
-considered when evaluating these [resuls](#results):
-
-* provenance - multiple sources that have not been guarenteed by the NWS
-* event types - there are more [event
-  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
-  the offical list
-
-The documentation states:
-
-_Some information appearing in Storm Data may be provided by or gathered from 
-sources outside the National Weather Service (NWS), such as the media, law 
-enforcement and/or other government agencies, private companies, individuals, 
-etc. An effort is made to use the best available information, but because of 
-time and resource constraints, information from these sources may be unverified 
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
-the information._
-
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-As per NWS Directive 10-1605 there are only 48 valid event types
-as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
-Service Storm Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
 
 ## Results
 
@@ -210,7 +203,7 @@ casualty.worst[1:(2*10),] %>%
     ggtitle("United States: Casualties from Severe Storm Weather (1996-2011)")
 ```
 
-![plot of chunk showcasualties](figure/showcasualties-1.png) 
+![](figure/showcasualties-1.png) 
 
 ### What events had the greatest economic cost? 
 
@@ -236,7 +229,7 @@ damage.worst[1:(2*10),] %>%
     ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
 ```
 
-![plot of chunk showdamages](figure/showdamages-1.png) 
+![](figure/showdamages-1.png) 
 
 ## Appendices
 
@@ -287,11 +280,12 @@ sessionInfo()
 ## [5] stringr_1.0.0  knitr_1.10.5  
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.11.6        codetools_0.2-11   digest_0.6.8      
-##  [4] assertthat_0.1     MASS_7.3-40        grid_3.2.0        
-##  [7] plyr_1.8.2         gtable_0.1.2       DBI_0.3.1         
-## [10] formatR_1.2        magrittr_1.5       evaluate_0.7      
-## [13] stringi_0.4-1      lazyeval_0.1.10    proto_0.3-10      
-## [16] RColorBrewer_1.1-2 tools_3.2.0        munsell_0.4.2     
-## [19] parallel_3.2.0     colorspace_1.2-6
+##  [1] Rcpp_0.11.6        magrittr_1.5       MASS_7.3-40       
+##  [4] munsell_0.4.2      colorspace_1.2-6   plyr_1.8.2        
+##  [7] tools_3.2.0        parallel_3.2.0     grid_3.2.0        
+## [10] gtable_0.1.2       DBI_0.3.1          htmltools_0.2.6   
+## [13] yaml_2.1.13        lazyeval_0.1.10    assertthat_0.1    
+## [16] digest_0.6.8       RColorBrewer_1.1-2 formatR_1.2       
+## [19] codetools_0.2-11   evaluate_0.7       rmarkdown_0.6.1   
+## [22] stringi_0.4-1      proto_0.3-10
 ```
