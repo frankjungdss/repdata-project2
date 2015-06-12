@@ -1,6 +1,12 @@
-# Impact of Severe Storm Events
-Frank Jung  
-12 June 2015  
+--- 
+title: 'Impact of Severe Storm Events' 
+author: "Frank Jung" 
+date: "12 June 2015" 
+output: 
+  html_document: 
+    keep_md: yes
+    toc: yes
+---
 
 ## Synopsis
 
@@ -30,7 +36,7 @@ require(dplyr, quietly = TRUE)
 require(reshape2, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
-opts_chunk$set(echo = TRUE, cache = TRUE, fig.width = 10, fig.height = 7)
+opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", fig.width = 10, fig.height = 7, fig.path = "figure/")
 ```
 
 ### Download Storm Data
@@ -204,7 +210,7 @@ casualty.worst[1:(2*10),] %>%
     ggtitle("United States: Casualties from Severe Storm Weather (1996-2011)")
 ```
 
-![](README_files/figure-html/showcasualties-1.png) 
+![plot of chunk showcasualties](figure/showcasualties-1.png) 
 
 ### What events had the greatest economic cost? 
 
@@ -230,7 +236,7 @@ damage.worst[1:(2*10),] %>%
     ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
 ```
 
-![](README_files/figure-html/showdamages-1.png) 
+![plot of chunk showdamages](figure/showdamages-1.png) 
 
 ## Appendices
 
@@ -281,12 +287,11 @@ sessionInfo()
 ## [5] stringr_1.0.0  knitr_1.10.5  
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.11.6        magrittr_1.5       MASS_7.3-40       
-##  [4] munsell_0.4.2      colorspace_1.2-6   plyr_1.8.2        
-##  [7] tools_3.2.0        parallel_3.2.0     grid_3.2.0        
-## [10] gtable_0.1.2       DBI_0.3.1          htmltools_0.2.6   
-## [13] yaml_2.1.13        lazyeval_0.1.10    assertthat_0.1    
-## [16] digest_0.6.8       RColorBrewer_1.1-2 formatR_1.2       
-## [19] codetools_0.2-11   evaluate_0.7       rmarkdown_0.6.1   
-## [22] stringi_0.4-1      proto_0.3-10
+##  [1] Rcpp_0.11.6        codetools_0.2-11   digest_0.6.8      
+##  [4] assertthat_0.1     MASS_7.3-40        grid_3.2.0        
+##  [7] plyr_1.8.2         gtable_0.1.2       DBI_0.3.1         
+## [10] formatR_1.2        magrittr_1.5       evaluate_0.7      
+## [13] stringi_0.4-1      lazyeval_0.1.10    proto_0.3-10      
+## [16] RColorBrewer_1.1-2 tools_3.2.0        munsell_0.4.2     
+## [19] parallel_3.2.0     colorspace_1.2-6
 ```
