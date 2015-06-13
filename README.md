@@ -17,9 +17,17 @@ greatest economic cost occurred as a consequence of
 
 ## Data Processing
 
-The following sections will read and process [Storm Data](#data) to obtain
-casualty and economic damage measurements. Note: Storm Data begins in 1950 and
-ends in November 2011.
+Storm Data begins in 1950 and ends in November 2011. The following sections will
+read and process [Storm Data](#data) to obtain casualty and economic damage 
+measurements. As this anaylsis is only looking at the most severe impacts of
+weather events we have made a number of simplifying assumptions:
+
+* looking at the entire USA and not focused on location specifics of state,
+county or marine region
+
+* the weather [events](#events) types is messy but will not be modified. Lets
+see the broader picture of weather effects to see if this will have a major
+impact.
 
 
 ```r
@@ -179,6 +187,9 @@ damage <- transform(damage, damages = factor(damages))
 ```
 
 ## Results
+
+Looking at the results, it is clear that some attention should be made to 
+address the  mis-classification of [event types](#events).
 
 ### What events had the most casualties?
 

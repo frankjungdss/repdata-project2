@@ -38,6 +38,9 @@ data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", t
 # from 1996
 data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
 
+# remove records with no casualties or damages
+data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
+
 # title-case event types for pretty display
 data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 
@@ -106,23 +109,61 @@ damage.worst[1:(2*10),] %>%
     ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
 
 #
+# REPORTS
+#
+
+# http://www.ncdc.noaa.gov/billions/docs/smith-and-katz-2013.pdf
+
+#
+# 48 VALID EVENTS
+#
+
+# Table 1, Section 2.1.1 "Storm Data Event Table" National Weather Service Storm Data Documentation
+# NWS Directive 10-1605:  http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
+eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
+
+#
 # WAYS TO CORRECT EVTYPE
 #
 
 # correct signiticant event types
 if (exists("fixevtype")) {
+    # se to uppercase only to make this easier
     data <- transform(data, evtype = toupper(evtype))
+    # change according to order of significance as measured by causalities, damages
     data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
     data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
-    data <- transform(data, evtype = gsub(" \\(G\\d+\\)", "", evtype), perl = TRUE)
-    data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE/TYPHOON", evtype))
-    data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE/TYPHOON", evtype))
+    data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
+    data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
+    data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
+    data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
     data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
-    data <- transform(data, evtype = gsub("COASTAL FLOODING.*", "COASTAL FLOOD", evtype))
+    data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
+    data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
+    data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
+    data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
+
 
     data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
     data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
     data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
     data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
-    data <- transform(data, evtype = gsub("WINTER WEATHER.MIX", "WINTER WEATHER", evtype))
+    data <- transform(data, evtype = gsub("WINTER WEATHER.*", "WINTER WEATHER", evtype))
+    data <- transform(data, evtype = gsub(".* FIRE", "WILDFIRE", evtype))
+
+    data <- transform(data, evtype = gsub("^WIND", "STRONG WIND", evtype))
+    data <- transform(data, evtype = gsub("GUSTY WINDS.*", "STRONG WIND", evtype))
+
 }
+
+#
+# CHECK STATE
+#
+
+# One way to do that elimination is use the R builtin datasets state.abb and
+# state.name to make that elimination easier:
+# https://class.coursera.org/repdata-015/forum/thread?thread_id=71#post-319
+# Annoyingly, those only have exactly the 50 states, and I think I might want
+# to include District of Columbia.
+
