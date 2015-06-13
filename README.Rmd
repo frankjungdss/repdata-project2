@@ -83,6 +83,8 @@ names(data) <- gsub("_", "", names(data))
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
 # use title-case for pretty reports
 data <- transform(data, evtype = str_to_title(str_trim(evtype)))
+# remove records where no casualties or damages have been recorded
+data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
 
 ### Events
