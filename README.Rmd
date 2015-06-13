@@ -199,11 +199,11 @@ to 2011. Total casualties were then sorted in descending order. The top ten
 events that cause the greatest loss of life or injury are:
 
 ```{r showcasualties}
-# use top 10 event types
-casualty.worst <- arrange(casualty, desc(total))
+# order by most severe events
+casualty <- arrange(casualty, desc(total))
 
-# plot casualties in descending order (first 2*10 rows since long format)
-casualty.worst[1:(2*10),] %>%
+# show n = 20  events by casualty in descending order (first 2*n rows since long format)
+casualty[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, -total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
     theme_light(base_family = "Avenir", base_size = 11) +
@@ -222,11 +222,11 @@ costs were then sorted in descending order. The top ten events that incur the
 greatest economic cost are:
 
 ```{r showdamages}
-# use top 10 event types
-damage.worst <- arrange(damage, desc(total))
+# order by most severe events
+damage <- arrange(damage, desc(total))
 
-# plot damages in descending order (first 2*10 rows since long format)
-damage.worst[1:(2*10),] %>%
+# show n = 20 events by damages in descending order (first 2*n rows since long format)
+damage[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, -total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
     theme_light(base_family = "Avenir", base_size = 11) +
