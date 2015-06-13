@@ -167,3 +167,76 @@ if (exists("fixevtype")) {
 # Annoyingly, those only have exactly the 50 states, and I think I might want
 # to include District of Columbia.
 
+# starting with post 1996 non-zero data we have
+data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
+                      "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+names(data) <- tolower(names(data))
+names(data) <- gsub("_", "", names(data))
+data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
+data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
+data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
+data <- data %>% filter(year >= 1996)
+data <- transform(data, evtype = str_to_title(str_trim(evtype)))
+
+# so if we exclude bad events, how does this change the results?
+
+# show change in event frequency if we remove all invalid event types
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 1), oma = c(2, 1, 1, 0))
+# histogram of all events post 1996
+hist(data$year, main = "", xlab = "")
+# histogram of only valid events post 1996
+eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
+eventtypes <- transform(eventtypes, eventtype = str_to_title(str_trim(eventtype)))
+# exclude bad events
+validevents <- data %>% filter(evtype %in% eventtypes$eventtype)
+hist(validevents$year, main = "", ylab = "", xlab = "")
+title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
+mtext("Year", side = 1, outer = TRUE)
+
+# show how this effects the order of event severity
+
+# casualties?
+
+# summarise by event type, and total is used to order results
+casualty <- data %>%
+    mutate(total = fatalities + injuries) %>%
+    filter(total > 0) %>%
+    select(evtype, total, fatalities, injuries) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), fatalities = sum(fatalities), injuries = sum(injuries))
+# melt into long format to help with plotting
+casualty <- melt(casualty, id.vars = c("evtype", "total"), variable.name = "casualties")
+casualty <- transform(casualty, casualties = factor(casualties))
+# original list
+casualty <- arrange(casualty, desc(total))
+# now drop bad events
+validevents <- casualty %>% filter(evtype %in% eventtypes$eventtype)
+# top 20 of each
+cbind(casualty[1:20,], validevents[1:20,])
+
+# what about damages?
+
+# convert damage exponents to associated numerics
+# where strtoi() will convert "" to 0
+data$propdmgexp <- strtoi(chartr("KMB", "369", data$propdmgexp))
+data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
+# update damage using translated exponents, where 10^0 = 1 (i.e. no change)
+options(scipen = 20)
+data$propdmg <- data$propdmg * 10^data$propdmgexp
+data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
+# summarise by event type, and total is used to order results
+damage <- data %>%
+    mutate(total = propdmg + cropdmg) %>%
+    filter(total > 0) %>%
+    select(evtype, total, propdmg, cropdmg) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), property = sum(propdmg), crop = sum(cropdmg))
+# melt into long format to help with plotting
+damage <- melt(damage, id.vars = c("evtype", "total"), variable.name = "damages")
+damage <- transform(damage, damages = factor(damages))
+# order by most severe events
+damage <- arrange(damage, desc(total))
+# now drop bad events
+validevents <- damage %>% filter(evtype %in% eventtypes$eventtype)
+# top 20 of each
+cbind(damage[1:20,], validevents[1:20,])
