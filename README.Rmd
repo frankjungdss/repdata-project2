@@ -29,9 +29,8 @@ weather events we have made a number of simplifying assumptions:
 * looking at the entire USA and not focused on location specifics of state,
 county or marine region
 
-* the weather [events](#events) types is messy but will not be modified. Lets
-see the broader picture of weather effects to see if this will have a major
-impact.
+* the weather [events](#events) types are messy and will only be minimally
+modified to highlight the principle events
 
 ```{r setoptions, echo=TRUE, message=FALSE, warning=FALSE}
 # set our runtime environment and global defaults.
@@ -80,8 +79,6 @@ names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
 # convert string to date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-# use title-case for pretty reports
-data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 # remove records where no casualties or damages have been recorded
 data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
@@ -123,6 +120,38 @@ As per NWS Directive 10-1605 there are only 48 valid event types
 as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
 Service Storm Data Documentation](#documentation). See also [Event Types 
 Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+
+Correct some of the more obvious issues with event types. Here we are only
+lightly touching the data, fixing the most obvious of event types to correspond
+to the permitted list.
+
+```{r fixevtype}
+# use uppercase to make this easier
+data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
+
+# change according to order of significance as measured by causalities, damages
+data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
+data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
+data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
+data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
+data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
+data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
+data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
+data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
+data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
+data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
+data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
+
+data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
+data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
+data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
+data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
+data <- transform(data, evtype = gsub("WINTER WEATHER.*", "WINTER WEATHER", evtype))
+data <- transform(data, evtype = gsub(".* FIRE", "WILDFIRE", evtype))
+
+# use title-case for pretty reports
+data <- transform(data, evtype = str_to_title(evtype))
+```
 
 ### Casualties
 
@@ -201,8 +230,8 @@ that cause the greatest loss of life or injury are:
 # order by most severe events
 casualty <- arrange(casualty, desc(total))
 
-# show n = 20  events by casualty in descending order (first 2*n rows since long format)
-casualty[1:(2*20),] %>%
+# show n = 10  events by casualty in descending order (first 2*n rows since long format)
+casualty[1:(2*10),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
@@ -224,8 +253,8 @@ greatest economic cost are:
 # order by most severe events
 damage <- arrange(damage, desc(total))
 
-# show n = 20 events by damages in descending order (first 2*n rows since long format)
-damage[1:(2*20),] %>%
+# show n = 10 events by damages in descending order (first 2*n rows since long format)
+damage[1:(2*10),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
