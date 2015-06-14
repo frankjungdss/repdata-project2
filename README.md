@@ -210,7 +210,6 @@ casualty[1:(2*20),] %>%
     coord_flip() +
     theme_light(base_family = "sans", base_size = 11) +
     theme(legend.justification = c(1, 0), legend.position = c(1, 0)) +
-    # theme(axis.text.x = element_text(angle = 90)) +
     scale_fill_brewer(name = "Casualty", palette = "Set2") +
     scale_x_discrete(name = "Weather Event") +
     scale_y_discrete(name = "Casualties (thousands)", breaks = pretty_breaks(n = 10)) +
@@ -237,7 +236,6 @@ damage[1:(2*20),] %>%
     coord_flip() +
     theme_light(base_family = "sans", base_size = 11) +
     theme(legend.justification = c(1, 0), legend.position = c(1, 0)) +
-    # theme(axis.text.x = element_text(angle = 90)) +
     scale_fill_brewer(name = "Damage", palette = "Set2") +
     scale_x_discrete(name = "Weather Event") +
     scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
