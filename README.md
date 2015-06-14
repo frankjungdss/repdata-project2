@@ -1,6 +1,4 @@
 # Impact of Severe Storm Events
-Frank Jung  
-12 June 2015  
 
 ## Synopsis
 
@@ -39,7 +37,8 @@ require(dplyr, quietly = TRUE)
 require(reshape2, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
-opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", fig.width = 10, fig.height = 7, fig.path = "figure/")
+opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", 
+               fig.width = 10, fig.height = 7, fig.path = "figure/")
 ```
 
 ### Download Storm Data
@@ -196,8 +195,8 @@ address the  mis-classification of [event types](#events).
 ### What events had the most casualties?
 
 The total number of casualties (fatalities and injuries) were counted from 1996 
-to 2011. Total casualties were then sorted in descending order. The top ten 
-events that cause the greatest loss of life or injury are:
+to 2011. Total casualties were then sorted in descending order. The top events
+that cause the greatest loss of life or injury are:
 
 
 ```r
@@ -206,11 +205,12 @@ casualty <- arrange(casualty, desc(total))
 
 # show n = 20  events by casualty in descending order (first 2*n rows since long format)
 casualty[1:(2*20),] %>%
-    ggplot(aes(x = reorder(evtype, -total), y = value/1000, fill = casualties)) +
+    ggplot(aes(x = reorder(evtype, total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
-    theme_light(base_family = "Avenir", base_size = 11) +
-    theme(legend.justification = c(1, 1), legend.position = c(1, 1)) +
-    theme(axis.text.x = element_text(angle = 90)) +
+    coord_flip() +
+    theme_light(base_family = "sans", base_size = 11) +
+    theme(legend.justification = c(1, 0), legend.position = c(1, 0)) +
+    # theme(axis.text.x = element_text(angle = 90)) +
     scale_fill_brewer(name = "Casualty", palette = "Set2") +
     scale_x_discrete(name = "Weather Event") +
     scale_y_discrete(name = "Casualties (thousands)", breaks = pretty_breaks(n = 10)) +
@@ -222,7 +222,7 @@ casualty[1:(2*20),] %>%
 ### What events had the greatest economic cost? 
 
 All Crop and property damage estimates were summed from 1996 to 2011. Total 
-costs were then sorted in descending order. The top ten events that incur the 
+costs were then sorted in descending order. The top events that incur the 
 greatest economic cost are:
 
 
@@ -232,11 +232,12 @@ damage <- arrange(damage, desc(total))
 
 # show n = 20 events by damages in descending order (first 2*n rows since long format)
 damage[1:(2*20),] %>%
-    ggplot(aes(x = reorder(evtype, -total), y = value/10^9, fill = damages)) +
+    ggplot(aes(x = reorder(evtype, total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
-    theme_light(base_family = "Avenir", base_size = 11) +
-    theme(legend.justification = c(1, 1), legend.position = c(1, 1)) +
-    theme(axis.text.x = element_text(angle = 90)) +
+    coord_flip() +
+    theme_light(base_family = "sans", base_size = 11) +
+    theme(legend.justification = c(1, 0), legend.position = c(1, 0)) +
+    # theme(axis.text.x = element_text(angle = 90)) +
     scale_fill_brewer(name = "Damage", palette = "Set2") +
     scale_x_discrete(name = "Weather Event") +
     scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
