@@ -118,10 +118,25 @@ damage.worst[1:(2*10),] %>%
 # 48 VALID EVENTS
 #
 
+# The documentation states:
+#
+# Some information appearing in Storm Data may be provided by or gathered from
+# sources outside the National Weather Service (NWS), such as the media, law
+# enforcement and/or other government agencies, private companies, individuals,
+# etc. An effort is made to use the best available information, but because of
+# time and resource constraints, information from these sources may be unverified
+# by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of
+# the information.
+#
+# Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
 # Table 1, Section 2.1.1 "Storm Data Event Table" National Weather Service Storm Data Documentation
 # NWS Directive 10-1605:  http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
 eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
 eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
+
+# unique event types by year
+aggregate(year ~ evtype, data, FUN = function(x) length(unique(x)))
 
 #
 # WAYS TO CORRECT EVTYPE
