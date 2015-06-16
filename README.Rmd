@@ -88,9 +88,8 @@ data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropd
 
 ### Events
 
-There are several issues with this Storm Data. This analysis will not address 
-these issues, other than to highlight them and note that they should be
-considered when evaluating these [results](#results):
+There are several issues with this Storm Data. Obvious event types have been 
+matched to standard event types:
 
 * event types - there are more [event
   types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
@@ -144,12 +143,12 @@ data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
 
 # map to a real event type
 data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
+data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
 data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
 data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
 data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
 data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
 data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
-data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
 data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
 data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
 data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
@@ -157,6 +156,7 @@ data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
 data <- transform(data, evtype = gsub("STORM SURGE.*", "STORM SURGE/TIDE", evtype))
 data <- transform(data, evtype = gsub("GUSTY WINDS", "STRONG WIND", evtype))
 data <- transform(data, evtype = gsub("NON.THUNDERSTORM WIND", "STRONG WIND", evtype))
+data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
 data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
 data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
 data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
