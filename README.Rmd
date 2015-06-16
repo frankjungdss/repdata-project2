@@ -95,7 +95,8 @@ considered when evaluating these [results](#results):
 * event types - there are more [event
   types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
   the offical list
-* provenance - multiple sources that have not been guarenteed by the NWS
+* provenance - data with multiple sources that have not been guarenteed by the
+  NWS
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
@@ -135,6 +136,19 @@ evcount <- length(unique(data$evtype))
 ```
 
 In our subset we have ```r evcount``` distinct event types.
+
+Multiple sources have not been guarenteed by the NWS, which state:
+
+_Some information appearing in Storm Data may be provided by or gathered from 
+sources outside the National Weather Service (NWS), such as the media, law 
+enforcement and/or other government agencies, private companies, individuals, 
+etc. An effort is made to use the best available information, but because of 
+time and resource constraints, information from these sources may be unverified 
+by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
+the information._
+
+Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
+Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
 
 ### Casualties
 
