@@ -255,3 +255,49 @@ damage <- arrange(damage, desc(total))
 validevents <- damage %>% filter(evtype %in% eventtypes$eventtype)
 # top 20 of each
 cbind(damage[1:20,], validevents[1:20,])
+
+
+#
+# CALCULATE MINIMUM DISTANCE BETWEEN EVTYPE
+#
+require(utils, quietly = TRUE)
+require(stringr, quietly = TRUE)
+require(dplyr, quietly = TRUE)
+require(reshape2, quietly = TRUE)
+require(ggplot2, quietly = TRUE)
+require(scales, quietly = TRUE)
+require(stringdist, quietly = TRUE)
+
+eventtypes <- read.csv("eventtypes.csv", stringsAsFactors = FALSE)
+eventtypes <- transform(eventtypes, eventtype = toupper(str_trim(eventtype)))
+et.master <- eventtypes$eventtype
+
+data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
+                      "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+names(data) <- tolower(names(data))
+names(data) <- gsub("_", "", names(data))
+# convert string to date
+data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
+# remove records where no casualties or damages have been recorded
+data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
+# uppercase event type
+data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
+# use data from 1996
+data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
+data <- data %>% filter(year >= 1996)
+# get unqiue event types
+et.data <- unique(data$evtype)
+length(evtypes)
+
+# map to a real event type
+et.data = gsub("TSTM", "THUNDERSTORM", et.data)
+et.data = gsub("CSTL", "COASTAL", et.data)
+
+bestmatch <- function(x) {
+    m <- stringdist(x, et.master)
+    et.master[which.min(m)]
+}
+
+
+sapply(et.data, FUN = function(x) et.master[which.min(stringdist(x, et.master))])
+
