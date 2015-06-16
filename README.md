@@ -5,11 +5,11 @@
 In this report we explore the NOAA Storm Database for the effects that severe 
 storm weather has had to both people and property. The data comes from the 
 United States [National Weather Service](http://www.weather.gov/) and covers the
-period from 1950 to 2011.  The data includes [many](#events) types of weather
-events. However, we selected only events after 1996 as that was when the largest
-range of weather events were first being measured. From this data we found that
-the greatest number of casualties (as measured by injury or fatality) occurred 
-during [tornados](#what-events-had-the-most-casualties). We also found that the 
+period from 1950 to 2011.  However, we selected only events between 1996 and 
+2011 as that was when a [larger range of weather events](#events) were first 
+being measured. We found that the greatest number of casualties (as measured by
+injury or fatality) occurred during 
+[tornados](#what-events-had-the-most-casualties). We also found that the 
 greatest economic cost occurred as a consequence of 
 [floods](#what-events-had-the-greatest-economic-cost).
 
@@ -20,12 +20,11 @@ read and process [Storm Data](#data) to obtain casualty and economic damage
 measurements. As this anaylsis is only looking at the most severe impacts of
 weather events we have made a number of simplifying assumptions:
 
-* looking at the entire USA and not focused on location specifics of state,
-county or marine region
+* we are looking at the entire USA and not focused on location specifics of 
+state, county or marine region
 
-* the weather [events](#events) types is messy but will not be modified. Lets
-see the broader picture of weather effects to see if this will have a major
-impact.
+* the weather [events](#events) types are messy, but will not be modified. Let
+us first see the broader picture of effects of severe weather.
 
 
 ```r
@@ -72,18 +71,28 @@ The column names were set to lowercase and cast to appropriate classes.
 # only need a subset of fields from storm data for this analysis
 data <- stormdata[, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES",
                       "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+
 # cleanup and lowercase column names
 names(data) <- tolower(names(data))
 names(data) <- gsub("_", "", names(data))
+
 # convert string to date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
-# use title-case for pretty reports
-data <- transform(data, evtype = str_to_title(str_trim(evtype)))
+
 # remove records where no casualties or damages have been recorded
 data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
 
 ### Events
+
+There are several issues with this Storm Data. This analysis will not address 
+these issues, other than to highlight them and note that they should be
+considered when evaluating these [results](#results):
+
+* event types - there are more [event
+  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
+  the offical list
+* provenance - multiple sources that have not been guarenteed by the NWS
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
@@ -92,35 +101,41 @@ standardised event types. So this analysis will use data from 1996 to 2011.
 
 
 ```r
-data <- data %>% filter(strtoi(format(data$bgndate, "%Y")) >= 1996)
+# plot combined histogram of events before and after
+data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
+
+# show change in event frequency if we remove all invalid event types
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 1), oma = c(2, 1, 1, 0))
+
+# histogram of events 1950 to 2011
+hist(data$year, main = "", xlab = "")
+
+# use data from 1996
+data <- data %>% filter(year >= 1996)
+
+# histogram of events from 1996 to 2011
+hist(data$year, main = "", ylab = "", xlab = "")
+title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
+mtext("Year", side = 1, outer = TRUE)
 ```
 
-There are several issues with this Storm Data. This analysis will not address 
-these issues, other than to highlight them and note that they should be
-considered when evaluating these [results](#results):
+![](figure/from1996-1.png) 
 
-* provenance - multiple sources that have not been guarenteed by the NWS
-* event types - there are more [event
-  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
-  the offical list
+As per NWS Directive 10-1605 there are only 48 valid event types as listed in 
+[Table 1, Section 2.1.1 "Storm Data Event Table", National Weather Service Storm
+Data Documentation](#documentation). See also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype). 
 
-The documentation states:
 
-_Some information appearing in Storm Data may be provided by or gathered from 
-sources outside the National Weather Service (NWS), such as the media, law 
-enforcement and/or other government agencies, private companies, individuals, 
-etc. An effort is made to use the best available information, but because of 
-time and resource constraints, information from these sources may be unverified 
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
-the information._
+```r
+# use title-case for pretty reports
+data <- transform(data, evtype = str_to_title(str_trim(evtype)))
 
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+# how many different event types do we have here?
+evcount <- length(unique(data$evtype))
+```
 
-As per NWS Directive 10-1605 there are only 48 valid event types
-as listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather 
-Service Storm Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+In our subset we have ``183`` distinct event types.
 
 ### Casualties
 
@@ -189,8 +204,9 @@ damage <- transform(damage, damages = factor(damages))
 
 ## Results
 
-Looking at the results, it is clear that some attention should be made to 
-address the  mis-classification of [event types](#events).
+Looking at the results, it is clear that some attention could be made to address
+the  messy [event types](#events), but this is unlikely to effect the ranking if
+the most severe.
 
 ### What events had the most casualties?
 
@@ -203,8 +219,8 @@ that cause the greatest loss of life or injury are:
 # order by most severe events
 casualty <- arrange(casualty, desc(total))
 
-# show n = 20  events by casualty in descending order (first 2*n rows since long format)
-casualty[1:(2*20),] %>%
+# show n = 10  events by casualty in descending order (first 2*n rows since long format)
+casualty[1:(2*10),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
@@ -229,8 +245,8 @@ greatest economic cost are:
 # order by most severe events
 damage <- arrange(damage, desc(total))
 
-# show n = 20 events by damages in descending order (first 2*n rows since long format)
-damage[1:(2*20),] %>%
+# show n = 10 events by damages in descending order (first 2*n rows since long format)
+damage[1:(2*10),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
@@ -245,6 +261,8 @@ damage[1:(2*20),] %>%
 ![](figure/showdamages-1.png) 
 
 ## Appendices
+
+### 
 
 ### Data
 
