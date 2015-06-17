@@ -357,8 +357,6 @@ damage[1:(2*20),] %>%
 
 ## Appendices
 
-### 
-
 ### Data
 
 * [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
