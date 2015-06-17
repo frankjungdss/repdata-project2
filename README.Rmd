@@ -121,8 +121,12 @@ The property and crop damage exponents are documented in Section 2.7 "Damage",
 [National Weather Service Storm Data
 Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
 
+```{r damageexponents}
+unique(unique(data$propdmgexp), unique(data$cropdmgexp))
+```
+
 They are: **K** for thousands ($10^3$), **M** for millions ($10^6$), **B** for
-billions ($10^9$).
+billions ($10^9$). (And blank is $10^0 = 1$)
 
 The following will map `propdmgexp` and `cropdmgexp` from a character to the 
 associated numeric value. We will then update the property (`propdmg`) and crop 
