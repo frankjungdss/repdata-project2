@@ -83,7 +83,7 @@ data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", t
 data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
 
-### Date
+### Effective Date
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
@@ -388,6 +388,7 @@ data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
 data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
 data <- transform(data, evtype = gsub("^FOG", "DENSE FOG", evtype))
 data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
+data <- transform(data, evtype = gsub("MUD.*SLIDE.*", "AVALANCHE", evtype))
 data <- transform(data, evtype = gsub("WILD.* FIRE", "WILDFIRE", evtype))
 data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
 data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
@@ -495,49 +496,48 @@ unique(data$evtype)
 ##  [49] "WHIRLWIND"                 "HEAVY SNOW SHOWER"        
 ##  [51] "LIGHT SNOW"                "MIXED PRECIP"             
 ##  [53] "COLD"                      "FREEZING SPRAY"           
-##  [55] "DOWNBURST"                 "MUDSLIDES"                
-##  [57] "MICROBURST"                "MUDSLIDE"                 
-##  [59] "SNOW"                      "SNOW SQUALLS"             
-##  [61] "WIND DAMAGE"               "LIGHT SNOWFALL"           
-##  [63] "FREEZING DRIZZLE"          "GUSTY WIND/RAIN"          
-##  [65] "GUSTY WIND/HVY RAIN"       "COLD TEMPERATURE"         
-##  [67] "HEAT WAVE"                 "COLD AND SNOW"            
-##  [69] "RAIN/SNOW"                 "GUSTY WIND"               
-##  [71] "HARD FREEZE"               "HEAT"                     
-##  [73] "MUD SLIDE"                 "FROST/FREEZE"             
-##  [75] "SNOW AND ICE"              "AGRICULTURAL FREEZE"      
-##  [77] "SNOW SQUALL"               "ICY ROADS"                
-##  [79] "HYPOTHERMIA/EXPOSURE"      "LAKE EFFECT SNOW"         
-##  [81] "MIXED PRECIPITATION"       "BLACK ICE"                
-##  [83] "DAM BREAK"                 "BLOWING SNOW"             
-##  [85] "FROST"                     "GRADIENT WIND"            
-##  [87] "UNSEASONABLY COLD"         "WET MICROBURST"           
-##  [89] "HEAVY SURF AND WIND"       "FUNNEL CLOUD"             
-##  [91] "LANDSLIDES"                "HIGH SWELLS"              
-##  [93] "SMALL HAIL"                "UNSEASONAL RAIN"          
-##  [95] "COASTAL EROSION"           "UNSEASONABLY WARM"        
-##  [97] "SEICHE"                    "COASTAL  FLOODING/EROSION"
-##  [99] "HYPERTHERMIA/EXPOSURE"     "ROCK SLIDE"               
-## [101] "GUSTY WIND/HAIL"           "HEAVY SEAS"               
-## [103] "LANDSPOUT"                 "RECORD HEAT"              
-## [105] "EXCESSIVE SNOW"            "WIND AND WAVE"            
-## [107] "LIGHT FREEZING RAIN"       "ICE ROADS"                
-## [109] "HIGH SEAS"                 "RAIN"                     
-## [111] "ROUGH SEAS"                "NON-SEVERE WIND DAMAGE"   
-## [113] "WARM WEATHER"              "LANDSLIDE"                
-## [115] "HIGH WATER"                "LATE SEASON SNOW"         
-## [117] "ROGUE WAVE"                "FALLING SNOW/ICE"         
-## [119] "BRUSH FIRE"                "BLOWING DUST"             
-## [121] "VOLCANIC ASH"              "HIGH SURF ADVISORY"       
-## [123] "HAZARDOUS SURF"            "COLD WEATHER"             
-## [125] "ICE ON ROAD"               "DROWNING"                 
-## [127] "MARINE THUNDERSTORM WIND"  "ASTRONOMICAL HIGH TIDE"   
-## [129] "HEAVY SURF/HIGH SURF"      "TROPICAL DEPRESSION"      
-## [131] "LAKE-EFFECT SNOW"          "MARINE HIGH WIND"         
-## [133] "TSUNAMI"                   "COLD/WIND CHILL"          
-## [135] "LAKESHORE FLOOD"           "MARINE STRONG WIND"       
-## [137] "ASTRONOMICAL LOW TIDE"     "DENSE SMOKE"              
-## [139] "MARINE HAIL"               "FREEZING FOG"
+##  [55] "DOWNBURST"                 "MICROBURST"               
+##  [57] "SNOW"                      "SNOW SQUALLS"             
+##  [59] "WIND DAMAGE"               "LIGHT SNOWFALL"           
+##  [61] "FREEZING DRIZZLE"          "GUSTY WIND/RAIN"          
+##  [63] "GUSTY WIND/HVY RAIN"       "COLD TEMPERATURE"         
+##  [65] "HEAT WAVE"                 "COLD AND SNOW"            
+##  [67] "RAIN/SNOW"                 "GUSTY WIND"               
+##  [69] "HARD FREEZE"               "HEAT"                     
+##  [71] "FROST/FREEZE"              "SNOW AND ICE"             
+##  [73] "AGRICULTURAL FREEZE"       "SNOW SQUALL"              
+##  [75] "ICY ROADS"                 "HYPOTHERMIA/EXPOSURE"     
+##  [77] "LAKE EFFECT SNOW"          "MIXED PRECIPITATION"      
+##  [79] "BLACK ICE"                 "DAM BREAK"                
+##  [81] "BLOWING SNOW"              "FROST"                    
+##  [83] "GRADIENT WIND"             "UNSEASONABLY COLD"        
+##  [85] "WET MICROBURST"            "HEAVY SURF AND WIND"      
+##  [87] "FUNNEL CLOUD"              "LANDSLIDES"               
+##  [89] "HIGH SWELLS"               "SMALL HAIL"               
+##  [91] "UNSEASONAL RAIN"           "COASTAL EROSION"          
+##  [93] "UNSEASONABLY WARM"         "SEICHE"                   
+##  [95] "COASTAL  FLOODING/EROSION" "HYPERTHERMIA/EXPOSURE"    
+##  [97] "ROCK SLIDE"                "GUSTY WIND/HAIL"          
+##  [99] "HEAVY SEAS"                "LANDSPOUT"                
+## [101] "RECORD HEAT"               "EXCESSIVE SNOW"           
+## [103] "WIND AND WAVE"             "LIGHT FREEZING RAIN"      
+## [105] "ICE ROADS"                 "HIGH SEAS"                
+## [107] "RAIN"                      "ROUGH SEAS"               
+## [109] "NON-SEVERE WIND DAMAGE"    "WARM WEATHER"             
+## [111] "LANDSLIDE"                 "HIGH WATER"               
+## [113] "LATE SEASON SNOW"          "ROGUE WAVE"               
+## [115] "FALLING SNOW/ICE"          "BRUSH FIRE"               
+## [117] "BLOWING DUST"              "VOLCANIC ASH"             
+## [119] "HIGH SURF ADVISORY"        "HAZARDOUS SURF"           
+## [121] "COLD WEATHER"              "ICE ON ROAD"              
+## [123] "DROWNING"                  "MARINE THUNDERSTORM WIND" 
+## [125] "ASTRONOMICAL HIGH TIDE"    "HEAVY SURF/HIGH SURF"     
+## [127] "TROPICAL DEPRESSION"       "LAKE-EFFECT SNOW"         
+## [129] "MARINE HIGH WIND"          "TSUNAMI"                  
+## [131] "COLD/WIND CHILL"           "LAKESHORE FLOOD"          
+## [133] "MARINE STRONG WIND"        "ASTRONOMICAL LOW TIDE"    
+## [135] "DENSE SMOKE"               "MARINE HAIL"              
+## [137] "FREEZING FOG"
 ```
 
 We can always add more but this seems a good start, addressing some of the more 

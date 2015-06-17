@@ -86,7 +86,7 @@ data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", t
 data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
 
-### Date
+### Effective Date
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
@@ -232,6 +232,7 @@ data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
 data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
 data <- transform(data, evtype = gsub("^FOG", "DENSE FOG", evtype))
 data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
+data <- transform(data, evtype = gsub("MUD.*SLIDE.*", "AVALANCHE", evtype))
 data <- transform(data, evtype = gsub("WILD.* FIRE", "WILDFIRE", evtype))
 data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
 data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
