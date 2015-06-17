@@ -146,37 +146,14 @@ data$cropdmgexp <- NULL
 
 ### Events
 
-But, what of the event types?
+There are several issues with [event 
+types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) in this 
+Storm data. As per NWS Directive 10-1605 there are only 48 valid event types as
+listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather
+Service Storm Data Documentation](#documentation). See also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype).
 
-There are several issues with this Storm Data. Obvious event types have been 
-matched to standard event types:
-
-* event types - there are more [event
-  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
-  the offical list
-* provenance - data with multiple sources that have not been guarenteed by the
-  NWS
-
-As per NWS Directive 10-1605 there are only 48 valid event types as listed in 
-[Table 1, Section 2.1.1 "Storm Data Event Table", National Weather Service Storm
-Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype). 
-
-Furthermore, there are multiple sources have not been guarenteed by the NWS,
-which state:
-
-_Some information appearing in Storm Data may be provided by or gathered from 
-sources outside the National Weather Service (NWS), such as the media, law 
-enforcement and/or other government agencies, private companies, individuals, 
-etc. An effort is made to use the best available information, but because of 
-time and resource constraints, information from these sources may be unverified 
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
-the information._
-
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-How bad is the event types?
+How many event types do we have here?
 
 ```{r uniqueevents}
 # trim and uppercase to standardise what we are looking at
@@ -190,8 +167,8 @@ evcount <- length(unique(data$evtype))
 ```
 
 In our subset we have ```r evcount``` distinct event types, which is a lot to
-clean-up. So, lets look at just those that have the largest impact as measured 
-by number of occurrences:
+clean-up. So, lets look at those that have the largest impact as measured 
+by number casuality and damage totals, and correct those:
 
 ```{r totals}
 # lets focus events with the most damages and casualties
