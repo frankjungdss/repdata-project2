@@ -30,7 +30,7 @@ weather events we have made a number of simplifying assumptions:
 state, county or marine region
 
 * the weather [events](#events) types are messy and will only be minimally
-modified to highlight the principle events
+modified to highlight the events of greatest impact
 
 ```{r setoptions, echo=TRUE, message=FALSE, warning=FALSE}
 # set our runtime environment and global defaults.
@@ -82,27 +82,18 @@ names(data) <- gsub("_", "", names(data))
 # convert string to date
 data <- transform(data, bgndate = as.Date(bgndate, format= "%m/%d/%Y 0:00:00", tz = "C"))
 
-# remove records where no casualties or damages have been recorded
+# remove records where no casualties and damages have been recorded
 data <- data %>% filter(!(fatalities == 0 & injuries == 0 & propdmg == 0 & cropdmg == 0))
 ```
 
-### Events
-
-There are several issues with this Storm Data. Obvious event types have been 
-matched to standard event types:
-
-* event types - there are more [event
-  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
-  the offical list
-* provenance - data with multiple sources that have not been guarenteed by the
-  NWS
+### Date
 
 From 1950 to 1995 only Tornado, Thunderstorm Wind and Hail weather events were
 being recorded. Then in 1996 the [NWS Directive 
 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) introduced 48 
 standardised event types. So this analysis will use data from 1996 to 2011.
 
-```{r from1996}
+```{r from1996, fig.width = 10, fig.height = 5}
 # plot combined histogram of events before and after
 data <- transform(data, year = strtoi(format(data$bgndate, "%Y")))
 
@@ -121,89 +112,10 @@ title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
 mtext("Year", side = 1, outer = TRUE)
 ```
 
-As per NWS Directive 10-1605 there are only 48 valid event types as listed in 
-[Table 1, Section 2.1.1 "Storm Data Event Table", National Weather Service Storm
-Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype). 
+So, restricting to 1996 onwards will give us a more even spread of events to
+analyse.
 
-```{r eventtypetitlecase}
-# use title-case for pretty reports
-data <- transform(data, evtype = str_to_title(str_trim(evtype)))
-
-# how many different event types do we have here?
-evcount <- length(unique(data$evtype))
-```
-
-In our subset we have ```r evcount``` distinct event types.
-
-Do a minimal clean-up, just fix spelling, abbreviationss and extraneous codes:
-```{r fixevtype}
-# use uppercase to make this easier
-data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
-
-# map to a real event type
-data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
-data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
-data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
-data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
-data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
-data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
-data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
-data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
-data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
-data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
-data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
-data <- transform(data, evtype = gsub("STORM SURGE.*", "STORM SURGE/TIDE", evtype))
-data <- transform(data, evtype = gsub("GUSTY WINDS", "STRONG WIND", evtype))
-data <- transform(data, evtype = gsub("NON.THUNDERSTORM WIND", "STRONG WIND", evtype))
-data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
-data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
-data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
-data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
-data <- transform(data, evtype = gsub(".* FIRE", "WILDFIRE", evtype))
-data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
-data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
-data <- transform(data, evtype = gsub("WINTRY MIX*", "WINTER WEATHER", evtype))
-data <- transform(data, evtype = gsub("WINTER WEATHER.*", "WINTER WEATHER", evtype))
-
-# use title-case for pretty reports
-data <- transform(data, evtype = str_to_title(evtype))
-```
-
-
-Multiple sources have not been guarenteed by the NWS, which state:
-
-_Some information appearing in Storm Data may be provided by or gathered from 
-sources outside the National Weather Service (NWS), such as the media, law 
-enforcement and/or other government agencies, private companies, individuals, 
-etc. An effort is made to use the best available information, but because of 
-time and resource constraints, information from these sources may be unverified 
-by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
-the information._
-
-Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
-Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
-
-### Casualties
-
-Prepare a data frame of total casualties, (composed of fatalties and injuries).
-The report will list weather events in descending order of total casualties.
-
-```{r getcasualties}
-# summarise by event type, and total is used to order results
-casualty <- data %>%
-    mutate(total = fatalities + injuries) %>%
-    filter(total > 0) %>%
-    select(evtype, total, fatalities, injuries) %>%
-    group_by(evtype) %>%
-    summarise(total = sum(total), fatalities = sum(fatalities), injuries = sum(injuries))
-
-# melt into long format to help with plotting
-casualty <- melt(casualty, id.vars = c("evtype", "total"), variable.name = "casualties")
-casualty <- transform(casualty, casualties = factor(casualties))
-```
-
-### Economic Damages
+### Damage Exponents
 
 The property and crop damage exponents are documented in Section 2.7 "Damage",
 [National Weather Service Storm Data
@@ -226,7 +138,152 @@ data$cropdmgexp <- strtoi(chartr("KMB", "369", data$cropdmgexp))
 options(scipen = 20)
 data$propdmg <- data$propdmg * 10^data$propdmgexp
 data$cropdmg <- data$cropdmg * 10^data$cropdmgexp
+
+# cleanup
+data$propdmgexp <- NULL
+data$cropdmgexp <- NULL
 ```
+
+### Events
+
+But, what of the event types?
+
+There are several issues with this Storm Data. Obvious event types have been 
+matched to standard event types:
+
+* event types - there are more [event
+  types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) than
+  the offical list
+* provenance - data with multiple sources that have not been guarenteed by the
+  NWS
+
+As per NWS Directive 10-1605 there are only 48 valid event types as listed in 
+[Table 1, Section 2.1.1 "Storm Data Event Table", National Weather Service Storm
+Data Documentation](#documentation). See also [Event Types 
+Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype). 
+
+Furthermore, there are multiple sources have not been guarenteed by the NWS,
+which state:
+
+_Some information appearing in Storm Data may be provided by or gathered from 
+sources outside the National Weather Service (NWS), such as the media, law 
+enforcement and/or other government agencies, private companies, individuals, 
+etc. An effort is made to use the best available information, but because of 
+time and resource constraints, information from these sources may be unverified 
+by the NWS. Accordingly, the NWS does not guarantee the accuracy or validity of 
+the information._
+
+Source: Section 1 "Storm Data Disclaimer", [National Weather Service Storm Data 
+Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+How bad is the event types?
+
+```{r uniqueevents}
+# trim and uppercase to standardise what we are looking at
+data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
+
+# what do we have?
+unique(data$evtype)
+
+# how many do we have
+evcount <- length(unique(data$evtype))
+```
+
+In our subset we have ```r evcount``` distinct event types, which is a lot to
+clean-up. So, lets look at just those that have the largest impact as measured 
+by number of occurrences:
+
+```{r totals}
+# lets focus events with the most damages and casualties
+totals <- data %>%
+    mutate(totcas = fatalities + injuries) %>%
+    mutate(totdmg = propdmg + cropdmg) %>%
+    select(evtype, totcas, totdmg) %>%
+    group_by(evtype) %>%
+    summarise(totcas = sum(totcas), totdmg = sum(totdmg))
+
+# what are the major events
+head(totals %>% arrange(desc(totcas)) %>% select(evtype, totcas), 20)
+head(totals %>% arrange(desc(totdmg)) %>% select(evtype, totdmg), 20)
+```
+
+From these lists we can see some obvious changes that will fix spelling some 
+abbreviations and extraneous codes. Lets apply some and map them to the known 48
+approved types:
+
+```{r fixevtype}
+# map to a real event type
+data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
+data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
+data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
+data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
+data <- transform(data, evtype = gsub("STORM SURGE.*", "STORM SURGE/TIDE", evtype))
+data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
+data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
+data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
+data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
+data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
+data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
+data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
+data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
+data <- transform(data, evtype = gsub("GUSTY WINDS", "STRONG WIND", evtype))
+data <- transform(data, evtype = gsub("NON.THUNDERSTORM WIND", "STRONG WIND", evtype))
+data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
+data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
+data <- transform(data, evtype = gsub("^FOG", "DENSE FOG", evtype))
+data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
+data <- transform(data, evtype = gsub("WILD.* FIRE", "WILDFIRE", evtype))
+data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
+data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
+data <- transform(data, evtype = gsub("WINTRY MIX*", "WINTER WEATHER", evtype))
+data <- transform(data, evtype = gsub("WINTER WEATHER.*", "WINTER WEATHER", evtype))
+
+# show impact
+totals <- data %>%
+    mutate(totcas = fatalities + injuries) %>%
+    mutate(totdmg = propdmg + cropdmg) %>%
+    select(evtype, totcas, totdmg) %>%
+    group_by(evtype) %>%
+    summarise(totcas = sum(totcas), totdmg = sum(totdmg))
+
+# what are the major events
+head(totals %>% arrange(desc(totcas)) %>% select(evtype, totcas), 20)
+head(totals %>% arrange(desc(totdmg)) %>% select(evtype, totdmg), 20)
+
+# what do we have now?
+unique(data$evtype)
+```
+
+We can always add more but this seems a good start, addressing some of the more 
+obvious events that have the most impact. The important thing is that the top 20
+now are in out approved list of events and we have not made too many assumptions
+about event categories.
+
+```{r eventtypetitlecase}
+# use title-case for pretty reports
+data <- transform(data, evtype = str_to_title(str_trim(evtype)))
+```
+
+### Casualties
+
+Prepare a data frame of total casualties, (composed of fatalties and injuries).
+The report will list weather events in descending order of total casualties.
+
+```{r getcasualties}
+# summarise by event type, and total is used to order results
+casualty <- data %>%
+    mutate(total = fatalities + injuries) %>%
+    filter(total > 0) %>%
+    select(evtype, total, fatalities, injuries) %>%
+    group_by(evtype) %>%
+    summarise(total = sum(total), fatalities = sum(fatalities), injuries = sum(injuries))
+
+# melt into long format to help with plotting
+casualty <- melt(casualty, id.vars = c("evtype", "total"), variable.name = "casualties")
+casualty <- transform(casualty, casualties = factor(casualties))
+```
+
+### Economic Damages
 
 Prepare a data frame of total damages, (composed of crop and property damage
 estimates in USD). The report will list event types in descending order of total
@@ -263,7 +320,7 @@ that cause the greatest loss of life or injury are:
 casualty <- arrange(casualty, desc(total))
 
 # show n = 10  events by casualty in descending order (first 2*n rows since long format)
-casualty[1:(2*10),] %>%
+casualty[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
@@ -286,7 +343,7 @@ greatest economic cost are:
 damage <- arrange(damage, desc(total))
 
 # show n = 10 events by damages in descending order (first 2*n rows since long format)
-damage[1:(2*10),] %>%
+damage[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +

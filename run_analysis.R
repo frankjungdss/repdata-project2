@@ -144,32 +144,49 @@ aggregate(year ~ evtype, data, FUN = function(x) length(unique(x)))
 
 # correct signiticant event types
 if (exists("fixevtype")) {
-    # se to uppercase only to make this easier
-    data <- transform(data, evtype = toupper(evtype))
-    # change according to order of significance as measured by causalities, damages
+    # trim and uppercase to standardise what we are looking at
+    data <- transform(data, evtype = toupper(str_trim(evtype, side = "both")))
+    # what do we have?
+    unique(data$evtype)
+    # how many do we have
+    evcount <- length(unique(data$evtype))
+    # map to a real event type
     data <- transform(data, evtype = gsub("TSTM", "THUNDERSTORM", evtype))
     data <- transform(data, evtype = gsub("^THUNDERSTORM.*", "THUNDERSTORM WIND", evtype))
     data <- transform(data, evtype = gsub("HURRICANE.*", "HURRICANE (TYPHOON)", evtype))
     data <- transform(data, evtype = gsub("^TYPHOON", "HURRICANE (TYPHOON)", evtype))
+    data <- transform(data, evtype = gsub("STORM SURGE.*", "STORM SURGE/TIDE", evtype))
+    data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
     data <- transform(data, evtype = gsub("EXTREME COLD.*", "EXTREME COLD/WIND CHILL", evtype))
     data <- transform(data, evtype = gsub("TIDAL FLOODING", "COASTAL FLOOD", evtype))
-    data <- transform(data, evtype = gsub("CSTL", "COASTAL", evtype))
     data <- transform(data, evtype = gsub(".*COASTAL FLOOD.*", "COASTAL FLOOD", evtype))
+    data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
     data <- transform(data, evtype = gsub("RIVER FLOOD.*", "FLOOD", evtype))
     data <- transform(data, evtype = gsub("ICE JAM FLOOD.*", "FLOOD", evtype))
     data <- transform(data, evtype = gsub(".*FLASH.FLOOD.*", "FLASH FLOOD", evtype))
-
-
+    data <- transform(data, evtype = gsub("GUSTY WINDS", "STRONG WIND", evtype))
+    data <- transform(data, evtype = gsub("NON.THUNDERSTORM WIND", "STRONG WIND", evtype))
+    data <- transform(data, evtype = gsub("HIGH WIND.*", "HIGH WIND", evtype))
+    data <- transform(data, evtype = gsub("WINDS", "WIND", evtype))
+    data <- transform(data, evtype = gsub("^FOG", "DENSE FOG", evtype))
     data <- transform(data, evtype = gsub("AVALANCE", "AVALANCHE", evtype))
-    data <- transform(data, evtype = gsub("COASTALSTORM", "COASTAL STORM", evtype))
+    data <- transform(data, evtype = gsub("WILD.* FIRE", "WILDFIRE", evtype))
     data <- transform(data, evtype = gsub("RIP CURRENTS", "RIP CURRENT", evtype))
     data <- transform(data, evtype = gsub("URBAN/SML STREAM FLD", "FLASH FLOOD", evtype))
+    data <- transform(data, evtype = gsub("WINTRY MIX*", "WINTER WEATHER", evtype))
     data <- transform(data, evtype = gsub("WINTER WEATHER.*", "WINTER WEATHER", evtype))
-    data <- transform(data, evtype = gsub(".* FIRE", "WILDFIRE", evtype))
-
-    data <- transform(data, evtype = gsub("^WIND", "STRONG WIND", evtype))
-    data <- transform(data, evtype = gsub("GUSTY WINDS.*", "STRONG WIND", evtype))
-
+    # show impact of updates
+    totals <- data %>%
+        mutate(totcas = fatalities + injuries) %>%
+        mutate(totdmg = propdmg + cropdmg) %>%
+        select(evtype, totcas, totdmg) %>%
+        group_by(evtype) %>%
+        summarise(totcas = sum(totcas), totdmg = sum(totdmg))
+    # what are the major events
+    head(totals %>% arrange(desc(totcas)) %>% select(evtype, totcas), 20)
+    head(totals %>% arrange(desc(totdmg)) %>% select(evtype, totdmg), 20)
+    # what do we have now?
+    unique(data$evtype)
 }
 
 #
@@ -297,7 +314,6 @@ bestmatch <- function(x) {
     m <- stringdist(x, et.master)
     et.master[which.min(m)]
 }
-
 
 sapply(et.data, FUN = function(x) et.master[which.min(stringdist(x, et.master))])
 
