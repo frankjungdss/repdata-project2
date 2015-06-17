@@ -646,10 +646,17 @@ damage[1:(2*20),] %>%
 
 ### Documentation
 
-* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+* National Climate Data Center -
+  [Storm Events](http://www.ncdc.noaa.gov/stormevents/details.jsp)
 
-* National Climatic Data Center Storm Events
-[FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+* National Climatic Data Center -
+  [Storm Events FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+* National Weather Service -
+  [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+* Investigative Reporters & Editors -
+  [Storm Events](https://ire.org/nicar/database-library/databases/storm-events/)
 
 ### Session Information
 
