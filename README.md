@@ -609,7 +609,7 @@ that cause the greatest loss of life or injury are:
 # order by most severe events
 casualty <- arrange(casualty, desc(total))
 
-# show n = 10  events by casualty in descending order (first 2*n rows since long format)
+# show n = 20  events by casualty in descending order (first 2*n rows since long format)
 casualty[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/1000, fill = casualties)) +
     geom_bar(stat = "identity", position = "stack") +
@@ -635,7 +635,7 @@ greatest economic cost are:
 # order by most severe events
 damage <- arrange(damage, desc(total))
 
-# show n = 10 events by damages in descending order (first 2*n rows since long format)
+# show n = 20 events by damages in descending order (first 2*n rows since long format)
 damage[1:(2*20),] %>%
     ggplot(aes(x = reorder(evtype, total), y = value/10^9, fill = damages)) +
     geom_bar(stat = "identity", position = "stack") +
