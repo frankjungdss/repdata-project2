@@ -1,6 +1,6 @@
 #!/usr/bin/R --verbose --quiet
 
-rm(list=setdiff(ls(), c("stormdata")))
+rm(list=setdiff(ls(), c("stormdata", "eventtypes")))
 
 #
 # INITIAL
