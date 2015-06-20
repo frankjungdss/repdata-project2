@@ -288,10 +288,6 @@ damage <- transform(damage, damages = factor(damages))
 
 ## Results
 
-Looking at the results, it is clear that some attention could be made to address
-the  messy [event types](#events), but this is unlikely to effect the ranking if
-the most severe.
-
 ### What events had the most casualties?
 
 The total number of casualties (fatalities and injuries) were counted from 1996 
