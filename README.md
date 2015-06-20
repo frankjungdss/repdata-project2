@@ -160,8 +160,7 @@ There are several issues with [event
 types](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype) in this 
 Storm data. As per NWS Directive 10-1605 there are only 48 valid event types as
 listed in [Table 1, Section 2.1.1 "Storm Data Event Table", National Weather
-Service Storm Data Documentation](#documentation). See also [Event Types 
-Available](http://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype).
+Service Storm Data Documentation](#documentation).
 
 How many event types do we have here?
 
@@ -274,9 +273,9 @@ sort(unique(data$evtype))
 evcount <- length(unique(data$evtype))
 ```
 
-In our subset we have ``183`` distinct event types, which is a lot to
-clean-up. So, lets look at those that have the largest impact as measured 
-by number casuality and damage totals, and correct those:
+In our subset we have ``183`` distinct event types, which is a lot to 
+clean-up. So, lets instead look at those that have the largest impact as
+measured by number of casualities and total damages, and just correct those:
 
 
 ```r
@@ -348,9 +347,9 @@ head(totals %>% arrange(desc(totdmg)) %>% select(evtype, totdmg), 20)
 ## 20      FROST/FREEZE   1104666000
 ```
 
-From these lists we can see some obvious changes that will fix spelling some 
-abbreviations and extraneous codes. Lets apply some and map them to the known 48
-approved types:
+From these lists we can see some obvious updates that will fix some spelling,
+abbreviation and extraneous codes. Lets apply these and map them to the relevant
+approved [event types](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf):
 
 
 ```r
@@ -523,10 +522,11 @@ sort(unique(data$evtype))
 ## [129] "WINTER STORM"              "WINTER WEATHER"
 ```
 
-We can always add more but this seems a good start, addressing some of the more 
-obvious events that have the most impact. The important thing is that the top 20
-now are in out approved list of events and we have not made too many assumptions
-about event categories.
+We can always add more but this seems like a good start, addressing some of the 
+more obvious events that have the most impact. The important thing is that the 
+top 20 now are in out approved list of
+[events](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf) and we have
+not made too many assumptions about event categories.
 
 
 ```r
