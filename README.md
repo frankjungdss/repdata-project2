@@ -112,6 +112,9 @@ mtext("Year", side = 1, outer = TRUE)
 
 ![](figure/from1996-1.png) 
 
+**Figure 1: Histogram showing frequency of events from 1950 to 2011, and from
+1996 to 2011.**
+
 So, restricting to 1996 onwards will give us a more even spread of events to
 analyse.
 
@@ -603,6 +606,8 @@ casualty[1:(2*20),] %>%
 
 ![](figure/showcasualties-1.png) 
 
+**Figure 2: Show total injury and deaths from storm events**
+
 ### What events had the greatest economic cost? 
 
 All Crop and property damage estimates were summed from 1996 to 2011. Total 
@@ -628,6 +633,8 @@ damage[1:(2*20),] %>%
 ```
 
 ![](figure/showdamages-1.png) 
+
+**Figure 3: Show property and crop damage estimates from storm events**
 
 ## Appendices
 

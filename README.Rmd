@@ -112,6 +112,9 @@ title(main = "Histogram: Event Frequencies by Year", outer = TRUE)
 mtext("Year", side = 1, outer = TRUE)
 ```
 
+**Figure 1: Histogram showing frequency of events from 1950 to 2011, and from
+1996 to 2011.**
+
 So, restricting to 1996 onwards will give us a more even spread of events to
 analyse.
 
@@ -311,6 +314,8 @@ casualty[1:(2*20),] %>%
     ggtitle("United States: Casualties from Severe Storm Weather (1996-2011)")
 ```
 
+**Figure 2: Show total injury and deaths from storm events**
+
 ### What events had the greatest economic cost? 
 
 All Crop and property damage estimates were summed from 1996 to 2011. Total 
@@ -333,6 +338,8 @@ damage[1:(2*20),] %>%
     scale_y_continuous(name = "Damages (estimate in USD Billions)", breaks = pretty_breaks(n = 10)) +
     ggtitle("United States: Economic Damages from Severe Storm Weather (1996-2011)")
 ```
+
+**Figure 3: Show property and crop damage estimates from storm events**
 
 ## Appendices
 
